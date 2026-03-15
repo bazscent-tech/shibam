@@ -4,8 +4,10 @@ import SectionBar from "@/components/SectionBar";
 import HeroSection from "@/components/HeroSection";
 import NewsFeed from "@/components/NewsFeed";
 import TrendingSidebar from "@/components/TrendingSidebar";
+import EnglishNewsSection from "@/components/EnglishNewsSection";
 import SiteFooter from "@/components/SiteFooter";
 import { mockArticles } from "@/data/mockNews";
+import { englishArticles } from "@/data/englishNews";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("الرئيسية");
@@ -30,6 +32,10 @@ const Index = () => {
             <TrendingSidebar />
           </div>
         </div>
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <EnglishNewsSection articles={englishArticles} />
       </div>
 
       <SiteFooter />

@@ -12,7 +12,7 @@ const AdminLogin = () => {
     e.preventDefault();
     // NOTE: This is a temporary frontend-only check.
     // Production must use server-side auth via Lovable Cloud.
-    if (username === "Mimerye" && password === "777492635") {
+    if (username === "Shibam" && password === "777492635") {
       sessionStorage.setItem("shibam_admin", "true");
       navigate("/admin/dashboard");
     } else {
