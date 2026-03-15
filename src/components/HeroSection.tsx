@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Article } from "@/data/mockNews";
-import { Clock } from "lucide-react";
+import { Clock, Newspaper } from "lucide-react";
+import ShareButtons from "./ShareButtons";
 
 interface HeroSectionProps {
   mainArticle: Article;
@@ -29,15 +30,21 @@ const HeroSection = ({ mainArticle, sideArticles }: HeroSectionProps) => {
       className="container mx-auto py-6"
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main hero - takes 2 cols */}
+        {/* Main hero */}
         <motion.article variants={itemVariants} className="lg:col-span-2 news-card overflow-hidden">
           <div className="relative">
-            <img
-              src={mainArticle.image}
-              alt={mainArticle.title}
-              className="w-full h-[300px] md:h-[420px] object-cover"
-              loading="eager"
-            />
+            {mainArticle.image ? (
+              <img
+                src={mainArticle.image}
+                alt={mainArticle.title}
+                className="w-full h-[300px] md:h-[420px] object-cover"
+                loading="eager"
+              />
+            ) : (
+              <div className="w-full h-[300px] md:h-[420px] bg-secondary flex items-center justify-center">
+                <Newspaper className="w-16 h-16 text-muted-foreground/30" />
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
             <div className="absolute bottom-0 right-0 left-0 p-5 md:p-8">
               {mainArticle.isBreaking && (
@@ -49,12 +56,15 @@ const HeroSection = ({ mainArticle, sideArticles }: HeroSectionProps) => {
               <p className="text-sm md:text-base text-primary-foreground/80 line-clamp-2 mb-3">
                 {mainArticle.description}
               </p>
-              <div className="flex items-center gap-3 text-primary-foreground/60 text-xs">
-                <span className="font-latin">{mainArticle.source}</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {mainArticle.publishedAt}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-primary-foreground/60 text-xs">
+                  <span className="font-latin">{mainArticle.source}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {mainArticle.publishedAt}
+                  </span>
+                </div>
+                <ShareButtons title={mainArticle.title} />
               </div>
             </div>
           </div>
@@ -69,12 +79,18 @@ const HeroSection = ({ mainArticle, sideArticles }: HeroSectionProps) => {
               className="news-card overflow-hidden flex-1"
             >
               <div className="relative h-full">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full min-h-[180px] object-cover"
-                  loading="lazy"
-                />
+                {article.image ? (
+                  <img
+                    src={article.image}
+                    alt={article.title}
+                    className="w-full h-full min-h-[180px] object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full min-h-[180px] bg-secondary flex items-center justify-center">
+                    <Newspaper className="w-12 h-12 text-muted-foreground/30" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
                 <div className="absolute bottom-0 right-0 left-0 p-4">
                   {article.isLive && (
@@ -87,9 +103,12 @@ const HeroSection = ({ mainArticle, sideArticles }: HeroSectionProps) => {
                   <h3 className="text-sm md:text-base font-bold text-primary-foreground leading-snug line-clamp-2">
                     {article.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-primary-foreground/50 text-xs mt-2">
-                    <Clock className="w-3 h-3" />
-                    {article.publishedAt}
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2 text-primary-foreground/50 text-xs">
+                      <Clock className="w-3 h-3" />
+                      {article.publishedAt}
+                    </div>
+                    <ShareButtons title={article.title} />
                   </div>
                 </div>
               </div>
