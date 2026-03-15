@@ -1,12 +1,26 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AdminLogin from "./pages/AdminLogin.tsx";
+import AdminLayout from "./components/AdminLayout.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
+import AdminArticles from "./pages/AdminArticles.tsx";
+import AdminSources from "./pages/AdminSources.tsx";
+import AdminAiTools from "./pages/AdminAiTools.tsx";
+import AdminTrending from "./pages/AdminTrending.tsx";
+import AdminSettings from "./pages/AdminSettings.tsx";
 
 const queryClient = new QueryClient();
+
+const AdminGuard = ({ children }: { children: React.ReactNode }) => {
+  const isAdmin = sessionStorage.getItem("shibam_admin") === "true";
+  if (!isAdmin) return <Navigate to="/admin" replace />;
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -16,7 +30,22 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminGuard>
+                <AdminLayout />
+              </AdminGuard>
+            }
+          >
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="articles" element={<AdminArticles />} />
+            <Route path="sources" element={<AdminSources />} />
+            <Route path="ai-tools" element={<AdminAiTools />} />
+            <Route path="trending" element={<AdminTrending />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
