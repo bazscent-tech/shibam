@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "./ThemeToggle";
 
 const SiteHeader = () => {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -11,9 +12,7 @@ const SiteHeader = () => {
   return (
     <header className="sticky-header border-b border-border">
       <div className="container mx-auto">
-        {/* Top bar */}
         <div className="flex items-center justify-between py-3">
-          {/* Logo - right side in RTL */}
           <div className="flex items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
               شبام <span className="text-urgent">نيوز</span>
@@ -24,7 +23,6 @@ const SiteHeader = () => {
             </span>
           </div>
 
-          {/* Center nav - desktop */}
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
               <a
@@ -37,8 +35,8 @@ const SiteHeader = () => {
             ))}
           </nav>
 
-          {/* Left actions */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="p-2 rounded-lg hover:bg-secondary transition-colors"
@@ -56,7 +54,6 @@ const SiteHeader = () => {
           </div>
         </div>
 
-        {/* Search bar */}
         <AnimatePresence>
           {searchOpen && (
             <motion.div
@@ -78,7 +75,6 @@ const SiteHeader = () => {
           )}
         </AnimatePresence>
 
-        {/* Mobile menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.nav

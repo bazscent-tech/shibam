@@ -1,0 +1,19 @@
+{
+  "name": "شبام نيوز - Shibam News",
+  "short_name": "شبام نيوز",
+  "description": "منصة إخبارية ذكية تعتمد على الذكاء الاصطناعي",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

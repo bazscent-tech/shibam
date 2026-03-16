@@ -13,6 +13,7 @@ import AdminSources from "./pages/AdminSources.tsx";
 import AdminAiTools from "./pages/AdminAiTools.tsx";
 import AdminTrending from "./pages/AdminTrending.tsx";
 import AdminSettings from "./pages/AdminSettings.tsx";
+import AdminQuickAccess from "./components/AdminQuickAccess.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AdminQuickAccess />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminLogin />} />
