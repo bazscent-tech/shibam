@@ -14,7 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      articles: {
+        Row: {
+          author: string | null
+          category: string | null
+          content: string | null
+          created_at: string
+          description: string | null
+          fetched_at: string
+          id: string
+          image_url: string | null
+          is_ai_generated: boolean
+          is_published: boolean
+          language: string
+          published_at: string | null
+          source_id: string | null
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          is_ai_generated?: boolean
+          is_published?: boolean
+          language?: string
+          published_at?: string | null
+          source_id?: string | null
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          is_ai_generated?: boolean
+          is_published?: boolean
+          language?: string
+          published_at?: string | null
+          source_id?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_sources: {
+        Row: {
+          articles_count: number
+          category: string | null
+          created_at: string
+          fetch_interval_minutes: number
+          fetch_method: string
+          fetch_url: string
+          id: string
+          is_active: boolean
+          language: string
+          last_fetched_at: string | null
+          name: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          articles_count?: number
+          category?: string | null
+          created_at?: string
+          fetch_interval_minutes?: number
+          fetch_method?: string
+          fetch_url: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          last_fetched_at?: string | null
+          name: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          articles_count?: number
+          category?: string | null
+          created_at?: string
+          fetch_interval_minutes?: number
+          fetch_method?: string
+          fetch_url?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          last_fetched_at?: string | null
+          name?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
