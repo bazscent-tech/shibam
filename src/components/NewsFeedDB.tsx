@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { DBArticle } from "@/hooks/useArticles";
-import { Clock, Newspaper } from "lucide-react";
+import { Clock } from "lucide-react";
 import ShareButtons from "./ShareButtons";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -34,21 +34,17 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
           transition={i < 6 ? { delay: i * 0.03, duration: 0.3 } : undefined}
           className="news-card overflow-hidden"
         >
-          <Link to={`/article/${article.id}`}>
-            {article.image_url ? (
+          {article.image_url && (
+            <Link to={`/article/${article.id}`}>
               <img
                 src={article.image_url}
                 alt={article.title}
                 className="w-full h-48 object-cover"
                 loading="lazy"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
               />
-            ) : (
-              <div className="w-full h-32 bg-secondary flex items-center justify-center">
-                <Newspaper className="w-10 h-10 text-muted-foreground/40" />
-              </div>
-            )}
-          </Link>
+            </Link>
+          )}
           <div className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-urgent">{article.category || (language === "ar" ? "عام" : "General")}</span>

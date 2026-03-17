@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import { categories } from "@/data/mockNews";
+import { useRef } from "react";
 
 interface SectionBarProps {
+  categories: string[];
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
 }
 
-const SectionBar = ({ activeCategory, onCategoryChange }: SectionBarProps) => {
+const SectionBar = ({ categories, activeCategory, onCategoryChange }: SectionBarProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (

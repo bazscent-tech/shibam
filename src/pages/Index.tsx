@@ -11,15 +11,25 @@ import TrendingSidebar from "@/components/TrendingSidebar";
 import SiteFooter from "@/components/SiteFooter";
 import { useArticles } from "@/hooks/useArticles";
 import { Loader2 } from "lucide-react";
-import { categories } from "@/data/mockNews";
+
+const arCategories = ["الرئيسية", "سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "صحة", "علوم", "منوعات"];
+const enCategories = ["All", "Politics", "Economy", "Technology", "Sports", "Culture", "Health", "Science", "Entertainment"];
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<"ar" | "en">("ar");
-  const [activeCategory, setActiveCategory] = useState("الرئيسية");
+  const [arCategory, setArCategory] = useState("الرئيسية");
+  const [enCategory, setEnCategory] = useState("All");
 
-  const { articles, loading, totalPages } = useArticles(activeSection === "ar" ? "ar" : "en", 1);
+  const { articles: arArticles, loading: arLoading, totalPages: arTotalPages } = useArticles("ar", 1);
+  const { articles: enArticles, loading: enLoading, totalPages: enTotalPages } = useArticles("en", 1);
 
-  // Filter by category if not "الرئيسية" / all
+  const isAr = activeSection === "ar";
+  const articles = isAr ? arArticles : enArticles;
+  const loading = isAr ? arLoading : enLoading;
+  const totalPages = isAr ? arTotalPages : enTotalPages;
+  const activeCategory = isAr ? arCategory : enCategory;
+  const setActiveCategory = isAr ? setArCategory : setEnCategory;
+
   const filtered = activeCategory === "الرئيسية" || activeCategory === "All"
     ? articles
     : articles.filter((a) => a.category === activeCategory);
@@ -27,32 +37,33 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <BreakingNewsTicker language={activeSection === "ar" ? "ar" : "en"} />
+      <BreakingNewsTicker language={activeSection} />
       <MetalPrices />
 
-      {/* Slider with latest articles that have images */}
+      {/* Slider for current section */}
       {articles.length > 0 && <NewsSlider articles={articles} />}
 
       <SectionToggle activeSection={activeSection} onChange={setActiveSection} />
 
       <SectionBar
+        categories={isAr ? arCategories : enCategories}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
 
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-6" dir={isAr ? "rtl" : "ltr"}>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">
-                {activeSection === "ar" ? "آخر الأخبار" : "Latest News"}
+                {isAr ? "آخر الأخبار" : "Latest News"}
               </h2>
               {totalPages > 1 && (
                 <Link
                   to={`/archive?lang=${activeSection}`}
                   className="text-sm text-urgent hover:underline"
                 >
-                  {activeSection === "ar" ? "عرض الكل ←" : "View All →"}
+                  {isAr ? "عرض الكل ←" : "View All →"}
                 </Link>
               )}
             </div>
@@ -63,7 +74,7 @@ const Index = () => {
             ) : filtered.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
                 <p className="text-lg">
-                  {activeSection === "ar"
+                  {isAr
                     ? "لا توجد أخبار حالياً. أضف مصادر من لوحة التحكم لبدء الجلب."
                     : "No news yet. Add sources from admin panel to start fetching."}
                 </p>
