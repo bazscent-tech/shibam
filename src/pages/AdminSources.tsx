@@ -348,6 +348,20 @@ const AdminSources = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
+                  القسم (عربي / عالمي)
+                </label>
+                <div className="flex gap-2">
+                  <button onClick={() => setSourceLanguage("ar")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "ar" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "ar" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
+                    عربي
+                  </button>
+                  <button onClick={() => setSourceLanguage("en")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "en" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "en" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
+                    Global (English)
+                  </button>
+                </div>
+              </div>
+
               <button onClick={handleAddSource} className="btn-admin-primary flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 إضافة كمصدر
