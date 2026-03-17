@@ -59,6 +59,7 @@ serve(async (req) => {
             fetch_interval_minutes: source.fetch_interval_minutes,
             is_active: source.is_active,
             fetch_method: source.fetch_method,
+            language: source.language,
           })
           .eq("id", source.id)
           .select()

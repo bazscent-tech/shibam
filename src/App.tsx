@@ -3,17 +3,19 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import AdminLogin from "./pages/AdminLogin.tsx";
-import AdminLayout from "./components/AdminLayout.tsx";
-import AdminDashboard from "./pages/AdminDashboard.tsx";
-import AdminArticles from "./pages/AdminArticles.tsx";
-import AdminSources from "./pages/AdminSources.tsx";
-import AdminAiTools from "./pages/AdminAiTools.tsx";
-import AdminTrending from "./pages/AdminTrending.tsx";
-import AdminSettings from "./pages/AdminSettings.tsx";
-import AdminQuickAccess from "./components/AdminQuickAccess.tsx";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import AdminLayout from "./components/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminArticles from "./pages/AdminArticles";
+import AdminSources from "./pages/AdminSources";
+import AdminAiTools from "./pages/AdminAiTools";
+import AdminTrending from "./pages/AdminTrending";
+import AdminSettings from "./pages/AdminSettings";
+import AdminQuickAccess from "./components/AdminQuickAccess";
+import ArticlePage from "./pages/ArticlePage";
+import NewsArchive from "./pages/NewsArchive";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
         <AdminQuickAccess />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/article/:id" element={<ArticlePage />} />
+          <Route path="/archive" element={<NewsArchive />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route
             path="/admin"

@@ -31,6 +31,7 @@ const AdminSources = () => {
   const [results, setResults] = useState<DetectionResult[] | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState("");
+  const [sourceLanguage, setSourceLanguage] = useState<"ar" | "en">("ar");
   const [fetchInterval, setFetchInterval] = useState(15);
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +136,7 @@ const AdminSources = () => {
             fetch_method: selectedResult.methodKey,
             fetch_url: selectedResult.fetchUrl,
             fetch_interval_minutes: fetchInterval,
+            language: sourceLanguage,
           },
         },
       });
@@ -343,6 +345,20 @@ const AdminSources = () => {
                   <span className="text-sm font-latin font-bold w-12 text-center" style={{ color: "hsl(var(--admin-text))" }}>
                     {fetchInterval} د
                   </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
+                  القسم (عربي / عالمي)
+                </label>
+                <div className="flex gap-2">
+                  <button onClick={() => setSourceLanguage("ar")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "ar" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "ar" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
+                    عربي
+                  </button>
+                  <button onClick={() => setSourceLanguage("en")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "en" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "en" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
+                    Global (English)
+                  </button>
                 </div>
               </div>
 
