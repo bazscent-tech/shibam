@@ -136,6 +136,7 @@ const AdminSources = () => {
             fetch_method: selectedResult.methodKey,
             fetch_url: selectedResult.fetchUrl,
             fetch_interval_minutes: fetchInterval,
+            language: sourceLanguage,
           },
         },
       });
