@@ -31,6 +31,7 @@ const AdminSources = () => {
   const [results, setResults] = useState<DetectionResult[] | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState("");
+  const [sourceLanguage, setSourceLanguage] = useState<"ar" | "en">("ar");
   const [fetchInterval, setFetchInterval] = useState(15);
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
