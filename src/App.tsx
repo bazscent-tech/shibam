@@ -9,6 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./components/AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminArticles from "./pages/AdminArticles";
+import AdminAddArticle from "./pages/AdminAddArticle";
 import AdminSources from "./pages/AdminSources";
 import AdminAiTools from "./pages/AdminAiTools";
 import AdminTrending from "./pages/AdminTrending";
