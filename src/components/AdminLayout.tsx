@@ -3,6 +3,7 @@ import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Newspaper,
+  PenSquare,
   Link2,
   Sparkles,
   TrendingUp,
@@ -15,6 +16,7 @@ import {
 const adminNav = [
   { label: "لوحة التحكم", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "المقالات", path: "/admin/articles", icon: Newspaper },
+  { label: "إضافة مقال", path: "/admin/add-article", icon: PenSquare },
   { label: "المصادر", path: "/admin/sources", icon: Link2 },
   { label: "أدوات الذكاء", path: "/admin/ai-tools", icon: Sparkles },
   { label: "الأبحاث والترندات", path: "/admin/trending", icon: TrendingUp },
