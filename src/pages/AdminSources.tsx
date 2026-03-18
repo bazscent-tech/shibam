@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Globe, Rss, Code, Zap, CheckCircle, AlertCircle, Loader2, Copy, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Search, Globe, Rss, Code, Zap, CheckCircle, AlertCircle, Loader2, Copy, Plus, Pencil, Trash2, RefreshCw, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,7 +32,8 @@ const AdminSources = () => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState("");
   const [sourceLanguage, setSourceLanguage] = useState<"ar" | "en">("ar");
-  const [fetchInterval, setFetchInterval] = useState(15);
+  const [fetchInterval, setFetchInterval] = useState(5);
+  const [autoFetchEnabled, setAutoFetchEnabled] = useState(true);
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,22 +42,28 @@ const AdminSources = () => {
   const [fetchResult, setFetchResult] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => { loadSources(); }, []);
+
+  // Auto-fetch timer
   useEffect(() => {
-    loadSources();
-  }, []);
+    const activeSources = sources.filter((s) => s.is_active);
+    if (activeSources.length === 0) return;
+    
+    const intervals = activeSources.map((source) => {
+      return setInterval(() => {
+        handleManualFetch(source.id);
+      }, source.fetch_interval_minutes * 60 * 1000);
+    });
+
+    return () => intervals.forEach(clearInterval);
+  }, [sources]);
 
   const loadSources = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("manage-sources", {
-        body: { action: "list" },
-      });
+      const { data, error } = await supabase.functions.invoke("manage-sources", { body: { action: "list" } });
       if (error) throw error;
       setSources(data.sources || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   const handleAnalyze = async () => {
@@ -64,53 +71,18 @@ const AdminSources = () => {
     setAnalyzing(true);
     setResults(null);
     setSelectedMethod(null);
-
     try {
-      // Try to detect RSS by fetching the URL
       const isRssUrl = url.includes("/rss") || url.includes("/feed") || url.includes(".xml") || url.includes("atom");
-      
       const detections: DetectionResult[] = [
-        {
-          method: "RSS Feed",
-          methodKey: "rss",
-          icon: Rss,
-          status: isRssUrl ? "success" : "warning",
-          description: isRssUrl ? "تم العثور على RSS صالح - الطريقة الأفضل" : "قد يحتوي على RSS - تحقق من /feed أو /rss",
-          fetchUrl: isRssUrl ? url : `${url.replace(/\/$/, "")}/feed`,
-        },
-        {
-          method: "HTML Scraping",
-          methodKey: "html",
-          icon: Code,
-          status: !isRssUrl ? "success" : "warning",
-          description: !isRssUrl ? "بنية HTML قابلة للاستخراج - مناسب" : "متاح كخيار بديل",
-          fetchUrl: url,
-        },
-        {
-          method: "JavaScript Rendering",
-          methodKey: "js",
-          icon: Globe,
-          status: "warning",
-          description: "محتوى ديناميكي - يتطلب متصفح",
-          fetchUrl: url,
-        },
-        {
-          method: "API Detection",
-          methodKey: "api",
-          icon: Zap,
-          status: "error",
-          description: "لم يتم العثور على API عام",
-          fetchUrl: `${url.replace(/\/$/, "")}/api/news`,
-        },
+        { method: "RSS Feed", methodKey: "rss", icon: Rss, status: isRssUrl ? "success" : "warning", description: isRssUrl ? "تم العثور على RSS صالح - الأفضل" : "قد يحتوي على RSS", fetchUrl: isRssUrl ? url : `${url.replace(/\/$/, "")}/feed` },
+        { method: "HTML Scraping", methodKey: "html", icon: Code, status: !isRssUrl ? "success" : "warning", description: !isRssUrl ? "بنية HTML قابلة للاستخراج" : "متاح كبديل", fetchUrl: url },
+        { method: "JavaScript", methodKey: "js", icon: Globe, status: "warning", description: "محتوى ديناميكي", fetchUrl: url },
+        { method: "API", methodKey: "api", icon: Zap, status: "error", description: "لم يتم العثور على API", fetchUrl: `${url.replace(/\/$/, "")}/api/news` },
       ];
-      
       setResults(detections);
-      // Auto-select best method
-      const best = detections.find(d => d.status === "success");
+      const best = detections.find((d) => d.status === "success");
       if (best) setSelectedMethod(best.methodKey);
-    } finally {
-      setAnalyzing(false);
-    }
+    } finally { setAnalyzing(false); }
   };
 
   const statusIcon = (status: string) => {
@@ -119,132 +91,91 @@ const AdminSources = () => {
     return <AlertCircle className="w-4 h-4 text-urgent" />;
   };
 
-  const selectedResult = results?.find(r => r.methodKey === selectedMethod);
+  const selectedResult = results?.find((r) => r.methodKey === selectedMethod);
 
   const handleAddSource = async () => {
-    if (!selectedResult || !sourceName) {
-      toast({ title: "أدخل اسم المصدر", variant: "destructive" });
-      return;
-    }
+    if (!selectedResult || !sourceName) { toast({ title: "أدخل اسم المصدر", variant: "destructive" }); return; }
     try {
       const { data, error } = await supabase.functions.invoke("manage-sources", {
         body: {
           action: "add",
           source: {
-            name: sourceName,
-            url: url,
-            fetch_method: selectedResult.methodKey,
-            fetch_url: selectedResult.fetchUrl,
-            fetch_interval_minutes: fetchInterval,
-            language: sourceLanguage,
+            name: sourceName, url, fetch_method: selectedResult.methodKey, fetch_url: selectedResult.fetchUrl,
+            fetch_interval_minutes: autoFetchEnabled ? fetchInterval : 0, language: sourceLanguage, is_active: autoFetchEnabled,
           },
         },
       });
       if (error) throw error;
       toast({ title: "تمت إضافة المصدر بنجاح ✓" });
-      setSources(prev => [data.source, ...prev]);
-      setUrl("");
-      setResults(null);
-      setSelectedMethod(null);
-      setSourceName("");
+      setSources((prev) => [data.source, ...prev]);
+      
+      // Immediately fetch news from the new source
+      if (autoFetchEnabled) {
+        setFetching(data.source.id);
+        try {
+          const { data: fetchData } = await supabase.functions.invoke("fetch-news", { body: { sourceId: data.source.id } });
+          toast({ title: `تم جلب ${fetchData?.fetched || 0} مقال من المصدر الجديد ✓` });
+          loadSources();
+        } catch {} finally { setFetching(null); }
+      }
+      
+      setUrl(""); setResults(null); setSelectedMethod(null); setSourceName("");
     } catch (e: any) {
-      toast({ title: "خطأ في إضافة المصدر", description: e.message, variant: "destructive" });
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
     }
   };
 
   const handleUpdateSource = async (id: string) => {
     try {
-      const { error } = await supabase.functions.invoke("manage-sources", {
-        body: { action: "update", source: { id, ...editData } },
-      });
+      const { error } = await supabase.functions.invoke("manage-sources", { body: { action: "update", source: { id, ...editData } } });
       if (error) throw error;
-      toast({ title: "تم التحديث بنجاح ✓" });
-      setEditingId(null);
-      loadSources();
-    } catch (e: any) {
-      toast({ title: "خطأ", description: e.message, variant: "destructive" });
-    }
+      toast({ title: "تم التحديث ✓" }); setEditingId(null); loadSources();
+    } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive" }); }
   };
 
   const handleDeleteSource = async (id: string) => {
     try {
-      const { error } = await supabase.functions.invoke("manage-sources", {
-        body: { action: "delete", source: { id } },
-      });
+      const { error } = await supabase.functions.invoke("manage-sources", { body: { action: "delete", source: { id } } });
       if (error) throw error;
-      setSources(prev => prev.filter(s => s.id !== id));
+      setSources((prev) => prev.filter((s) => s.id !== id));
       toast({ title: "تم الحذف ✓" });
-    } catch (e: any) {
-      toast({ title: "خطأ", description: e.message, variant: "destructive" });
-    }
+    } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive" }); }
   };
 
   const handleManualFetch = async (sourceId?: string) => {
     setFetching(sourceId || "all");
     setFetchResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-news", {
-        body: { sourceId },
-      });
+      const { data, error } = await supabase.functions.invoke("fetch-news", { body: { sourceId } });
       if (error) throw error;
       setFetchResult(`تم جلب ${data.fetched} مقال من ${data.sources} مصادر`);
-      toast({ title: `تم جلب ${data.fetched} مقال بنجاح ✓` });
+      toast({ title: `تم جلب ${data.fetched} مقال ✓` });
       loadSources();
-    } catch (e: any) {
-      toast({ title: "خطأ في الجلب", description: e.message, variant: "destructive" });
-    } finally {
-      setFetching(null);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "تم النسخ ✓" });
+    } catch (e: any) { toast({ title: "خطأ في الجلب", description: e.message, variant: "destructive" }); } finally { setFetching(null); }
   };
 
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold" style={{ color: "hsl(var(--admin-text))" }}>
-          محلل المصادر الإخبارية
-        </h1>
-        <button
-          onClick={() => handleManualFetch()}
-          disabled={fetching === "all"}
-          className="btn-admin-primary flex items-center gap-2 disabled:opacity-50"
-        >
-          {fetching === "all" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          جلب الأخبار الآن
+        <h1 className="text-xl font-bold" style={{ color: "hsl(var(--admin-text))" }}>محلل المصادر الإخبارية</h1>
+        <button onClick={() => handleManualFetch()} disabled={fetching === "all"} className="btn-admin-primary flex items-center gap-2 disabled:opacity-50">
+          {fetching === "all" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} جلب الأخبار الآن
         </button>
       </div>
 
       {fetchResult && (
-        <div className="admin-surface p-4 border-green-500/30" style={{ borderColor: "hsl(142 76% 36% / 0.3)" }}>
+        <div className="admin-surface p-4" style={{ borderColor: "hsl(142 76% 36% / 0.3)" }}>
           <p className="text-sm text-green-400">{fetchResult}</p>
         </div>
       )}
 
       {/* URL Input */}
       <div className="admin-surface p-5">
-        <label className="block text-sm mb-2" style={{ color: "hsl(var(--admin-text-muted))" }}>
-          ألصق رابط المصدر الإخباري
-        </label>
+        <label className="block text-sm mb-2" style={{ color: "hsl(var(--admin-text-muted))" }}>ألصق رابط المصدر الإخباري</label>
         <div className="flex gap-3">
-          <input
-            type="url"
-            dir="ltr"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="admin-input flex-1"
-            placeholder="https://example.com/news"
-          />
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing || !url}
-            className="btn-admin-primary flex items-center gap-2 disabled:opacity-50"
-          >
-            {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            تحليل
+          <input type="url" dir="ltr" value={url} onChange={(e) => setUrl(e.target.value)} className="admin-input flex-1" placeholder="https://example.com/news" />
+          <button onClick={handleAnalyze} disabled={analyzing || !url} className="btn-admin-primary flex items-center gap-2 disabled:opacity-50">
+            {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} تحليل
           </button>
         </div>
       </div>
@@ -252,37 +183,17 @@ const AdminSources = () => {
       {/* Results */}
       {results && (
         <div className="admin-surface p-5 space-y-4">
-          <h2 className="text-lg font-semibold" style={{ color: "hsl(var(--admin-text))" }}>
-            نتائج التحليل
-          </h2>
+          <h2 className="text-lg font-semibold" style={{ color: "hsl(var(--admin-text))" }}>نتائج التحليل</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {results.map((r) => {
               const isSelected = selectedMethod === r.methodKey;
               const isBest = r.status === "success";
               return (
-                <button
-                  key={r.method}
-                  onClick={() => setSelectedMethod(r.methodKey)}
-                  className={`flex items-center gap-3 p-4 rounded-lg text-right transition-all ${
-                    isSelected ? "ring-2 ring-green-500" : ""
-                  }`}
-                  style={{
-                    background: isBest
-                      ? "hsl(142 76% 36% / 0.1)"
-                      : "hsl(var(--admin-surface-hover))",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    checked={isSelected}
-                    onChange={() => setSelectedMethod(r.methodKey)}
-                    className="w-4 h-4 accent-green-500"
-                  />
+                <button key={r.method} onClick={() => setSelectedMethod(r.methodKey)} className={`flex items-center gap-3 p-4 rounded-lg text-right transition-all ${isSelected ? "ring-2 ring-green-500" : ""}`} style={{ background: isBest ? "hsl(142 76% 36% / 0.1)" : "hsl(var(--admin-surface-hover))" }}>
+                  <input type="radio" checked={isSelected} onChange={() => setSelectedMethod(r.methodKey)} className="w-4 h-4 accent-green-500" />
                   <r.icon className="w-5 h-5" style={{ color: isBest ? "#22c55e" : "hsl(var(--admin-text-muted))" }} />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold" style={{ color: isBest ? "#22c55e" : "hsl(var(--admin-text))" }}>
-                      {r.method} {isBest && "★"}
-                    </p>
+                    <p className="text-sm font-semibold" style={{ color: isBest ? "#22c55e" : "hsl(var(--admin-text))" }}>{r.method} {isBest && "★"}</p>
                     <p className="text-xs" style={{ color: "hsl(var(--admin-text-muted))" }}>{r.description}</p>
                   </div>
                   {statusIcon(r.status)}
@@ -291,80 +202,46 @@ const AdminSources = () => {
             })}
           </div>
 
-          {/* Selected method details */}
           {selectedResult && (
             <div className="space-y-3 pt-4" style={{ borderTop: "1px solid hsl(var(--admin-border))" }}>
               <div>
-                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
-                  رابط الجلب المُنشأ
-                </label>
+                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>رابط الجلب</label>
+                <input type="text" dir="ltr" readOnly value={selectedResult.fetchUrl} className="admin-input flex-1 font-latin text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>اسم المصدر</label>
+                <input type="text" value={sourceName} onChange={(e) => setSourceName(e.target.value)} className="admin-input" placeholder="مثال: رويترز عربي" />
+              </div>
+              <div>
+                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>القسم</label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    dir="ltr"
-                    readOnly
-                    value={selectedResult.fetchUrl}
-                    className="admin-input flex-1 font-latin text-sm"
-                  />
-                  <button
-                    onClick={() => copyToClipboard(selectedResult.fetchUrl)}
-                    className="p-3 rounded hover:bg-[hsl(var(--admin-surface-hover))] transition-colors"
-                    style={{ color: "hsl(var(--admin-text-muted))" }}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => setSourceLanguage("ar")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "ar" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "ar" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>عربي</button>
+                  <button onClick={() => setSourceLanguage("en")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "en" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "en" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>Global</button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
-                  اسم المصدر / القناة
+              {/* Auto fetch toggle */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={autoFetchEnabled} onChange={(e) => setAutoFetchEnabled(e.target.checked)} className="w-4 h-4 accent-green-500" />
+                  <span className="text-sm" style={{ color: "hsl(var(--admin-text))" }}>تفعيل الجلب التلقائي</span>
                 </label>
-                <input
-                  type="text"
-                  value={sourceName}
-                  onChange={(e) => setSourceName(e.target.value)}
-                  className="admin-input"
-                  placeholder="مثال: رويترز عربي"
-                />
               </div>
 
-              <div>
-                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
-                  فترة الجلب التلقائي (بالدقائق)
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={1}
-                    max={30}
-                    value={fetchInterval}
-                    onChange={(e) => setFetchInterval(Number(e.target.value))}
-                    className="flex-1 accent-green-500"
-                  />
-                  <span className="text-sm font-latin font-bold w-12 text-center" style={{ color: "hsl(var(--admin-text))" }}>
-                    {fetchInterval} د
-                  </span>
+              {autoFetchEnabled && (
+                <div>
+                  <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
+                    <Timer className="w-3.5 h-3.5 inline ml-1" /> فترة الجلب (1-10 دقائق)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input type="range" min={1} max={10} value={fetchInterval} onChange={(e) => setFetchInterval(Number(e.target.value))} className="flex-1 accent-green-500" />
+                    <span className="text-sm font-latin font-bold w-12 text-center" style={{ color: "hsl(var(--admin-text))" }}>{fetchInterval} د</span>
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>
-                  القسم (عربي / عالمي)
-                </label>
-                <div className="flex gap-2">
-                  <button onClick={() => setSourceLanguage("ar")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "ar" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "ar" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
-                    عربي
-                  </button>
-                  <button onClick={() => setSourceLanguage("en")} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${sourceLanguage === "en" ? "btn-admin-primary" : ""}`} style={sourceLanguage !== "en" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>
-                    Global (English)
-                  </button>
-                </div>
-              </div>
+              )}
 
               <button onClick={handleAddSource} className="btn-admin-primary flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                إضافة كمصدر
+                <Plus className="w-4 h-4" /> نشر المصدر
               </button>
             </div>
           )}
@@ -373,53 +250,23 @@ const AdminSources = () => {
 
       {/* Existing sources */}
       <div className="admin-surface p-5">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: "hsl(var(--admin-text))" }}>
-          المصادر الحالية ({sources.length})
-        </h2>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: "hsl(var(--admin-text))" }}>المصادر الحالية ({sources.length})</h2>
         {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "hsl(var(--admin-text-muted))" }} />
-          </div>
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "hsl(var(--admin-text-muted))" }} /></div>
         ) : sources.length === 0 ? (
-          <p className="text-sm text-center py-8" style={{ color: "hsl(var(--admin-text-muted))" }}>
-            لا توجد مصادر بعد. حلّل رابطاً وأضفه كمصدر.
-          </p>
+          <p className="text-sm text-center py-8" style={{ color: "hsl(var(--admin-text-muted))" }}>لا توجد مصادر بعد</p>
         ) : (
           <div className="space-y-2">
             {sources.map((source) => (
-              <div
-                key={source.id}
-                className="p-4 rounded-lg"
-                style={{ background: "hsl(var(--admin-surface-hover))" }}
-              >
+              <div key={source.id} className="p-4 rounded-lg" style={{ background: "hsl(var(--admin-surface-hover))" }}>
                 {editingId === source.id ? (
                   <div className="space-y-3">
-                    <input
-                      className="admin-input text-sm"
-                      value={editData.name ?? source.name}
-                      onChange={(e) => setEditData(d => ({ ...d, name: e.target.value }))}
-                      placeholder="اسم المصدر"
-                    />
-                    <input
-                      className="admin-input text-sm font-latin"
-                      dir="ltr"
-                      value={editData.fetch_url ?? source.fetch_url}
-                      onChange={(e) => setEditData(d => ({ ...d, fetch_url: e.target.value }))}
-                      placeholder="رابط الجلب"
-                    />
+                    <input className="admin-input text-sm" value={editData.name ?? source.name} onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))} />
+                    <input className="admin-input text-sm font-latin" dir="ltr" value={editData.fetch_url ?? source.fetch_url} onChange={(e) => setEditData((d) => ({ ...d, fetch_url: e.target.value }))} />
                     <div className="flex items-center gap-3">
                       <label className="text-xs" style={{ color: "hsl(var(--admin-text-muted))" }}>الفترة:</label>
-                      <input
-                        type="range"
-                        min={1}
-                        max={30}
-                        value={editData.fetch_interval_minutes ?? source.fetch_interval_minutes}
-                        onChange={(e) => setEditData(d => ({ ...d, fetch_interval_minutes: Number(e.target.value) }))}
-                        className="flex-1 accent-green-500"
-                      />
-                      <span className="text-xs font-latin" style={{ color: "hsl(var(--admin-text))" }}>
-                        {editData.fetch_interval_minutes ?? source.fetch_interval_minutes} د
-                      </span>
+                      <input type="range" min={1} max={10} value={editData.fetch_interval_minutes ?? source.fetch_interval_minutes} onChange={(e) => setEditData((d) => ({ ...d, fetch_interval_minutes: Number(e.target.value) }))} className="flex-1 accent-green-500" />
+                      <span className="text-xs font-latin" style={{ color: "hsl(var(--admin-text))" }}>{editData.fetch_interval_minutes ?? source.fetch_interval_minutes} د</span>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleUpdateSource(source.id)} className="btn-admin-primary text-xs px-3 py-1.5">حفظ</button>
@@ -433,31 +280,18 @@ const AdminSources = () => {
                       <div>
                         <p className="text-sm font-medium" style={{ color: "hsl(var(--admin-text))" }}>{source.name}</p>
                         <p className="text-xs" style={{ color: "hsl(var(--admin-text-muted))" }}>
-                          {source.fetch_method.toUpperCase()} · {source.articles_count} مقال · كل {source.fetch_interval_minutes} دقيقة
+                          {source.fetch_method.toUpperCase()} · {source.language === "ar" ? "عربي" : "English"} · {source.articles_count} مقال · كل {source.fetch_interval_minutes} دقيقة
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleManualFetch(source.id)}
-                        disabled={fetching === source.id}
-                        className="p-1.5 rounded hover:bg-[hsl(var(--admin-bg))] transition-colors"
-                        style={{ color: "hsl(var(--admin-text-muted))" }}
-                        title="جلب الآن"
-                      >
+                      <button onClick={() => handleManualFetch(source.id)} disabled={fetching === source.id} className="p-1.5 rounded hover:bg-[hsl(var(--admin-bg))] transition-colors" style={{ color: "hsl(var(--admin-text-muted))" }} title="جلب الآن">
                         {fetching === source.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                       </button>
-                      <button
-                        onClick={() => { setEditingId(source.id); setEditData({}); }}
-                        className="p-1.5 rounded hover:bg-[hsl(var(--admin-bg))] transition-colors"
-                        style={{ color: "hsl(var(--admin-text-muted))" }}
-                      >
+                      <button onClick={() => { setEditingId(source.id); setEditData({}); }} className="p-1.5 rounded hover:bg-[hsl(var(--admin-bg))] transition-colors" style={{ color: "hsl(var(--admin-text-muted))" }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteSource(source.id)}
-                        className="p-1.5 rounded hover:bg-urgent/10 text-urgent"
-                      >
+                      <button onClick={() => handleDeleteSource(source.id)} className="p-1.5 rounded hover:bg-urgent/10 text-urgent">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       <span className={`text-xs px-2 py-1 rounded ${source.is_active ? "text-green-400 bg-green-400/10" : "text-amber-400 bg-amber-400/10"}`}>
