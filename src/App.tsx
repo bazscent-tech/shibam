@@ -48,6 +48,7 @@ const App = () => (
           >
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="articles" element={<AdminArticles />} />
+            <Route path="add-article" element={<AdminAddArticle />} />
             <Route path="sources" element={<AdminSources />} />
             <Route path="ai-tools" element={<AdminAiTools />} />
             <Route path="trending" element={<AdminTrending />} />
