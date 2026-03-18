@@ -87,7 +87,13 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { sourceId } = await req.json();
+    let sourceId: string | undefined;
+    try {
+      const body = await req.json();
+      sourceId = body?.sourceId;
+    } catch {
+      // Empty body from cron - fetch all active sources
+    }
 
     // Get source(s) to fetch
     let query = supabase.from("news_sources").select("*").eq("is_active", true);
