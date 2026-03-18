@@ -19,9 +19,10 @@ const Index = () => {
   const [activeSection, setActiveSection] = useState<"ar" | "en">("ar");
   const [arCategory, setArCategory] = useState("الرئيسية");
   const [enCategory, setEnCategory] = useState("All");
+  const [page, setPage] = useState(1);
 
-  const { articles: arArticles, loading: arLoading, totalPages: arTotalPages } = useArticles("ar", 1);
-  const { articles: enArticles, loading: enLoading, totalPages: enTotalPages } = useArticles("en", 1);
+  const { articles: arArticles, loading: arLoading, totalPages: arTotalPages, totalCount: arTotalCount } = useArticles("ar", activeSection === "ar" ? page : 1);
+  const { articles: enArticles, loading: enLoading, totalPages: enTotalPages, totalCount: enTotalCount } = useArticles("en", activeSection === "en" ? page : 1);
 
   const isAr = activeSection === "ar";
   const articles = isAr ? arArticles : enArticles;
@@ -34,16 +35,37 @@ const Index = () => {
     ? articles
     : articles.filter((a) => a.category === activeCategory);
 
+  const handleSectionChange = (section: "ar" | "en") => {
+    setActiveSection(section);
+    setPage(1);
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push("ellipsis");
+      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+        pages.push(i);
+      }
+      if (page < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <BreakingNewsTicker language={activeSection} />
       <MetalPrices />
 
-      {/* Slider for current section */}
       {articles.length > 0 && <NewsSlider articles={articles} />}
 
-      <SectionToggle activeSection={activeSection} onChange={setActiveSection} />
+      <SectionToggle activeSection={activeSection} onChange={handleSectionChange} />
 
       <SectionBar
         categories={isAr ? arCategories : enCategories}
@@ -80,7 +102,61 @@ const Index = () => {
                 </p>
               </div>
             ) : (
-              <NewsFeedDB articles={filtered} language={activeSection} />
+              <>
+                <NewsFeedDB articles={filtered} language={activeSection} />
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <nav className="flex items-center justify-center gap-1 mt-8 flex-wrap" dir={isAr ? "rtl" : "ltr"}>
+                    {/* Previous */}
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => { setPage(page - 1); window.scrollTo(0, 0); }}
+                      className="px-3 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-30 transition-colors"
+                    >
+                      {isAr ? "← السابق" : "← Previous"}
+                    </button>
+
+                    {/* Page numbers */}
+                    {getPageNumbers().map((p, i) =>
+                      p === "ellipsis" ? (
+                        <span key={`e${i}`} className="px-2 text-muted-foreground">...</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => { setPage(p); window.scrollTo(0, 0); }}
+                          className={`w-10 h-10 rounded-lg text-sm font-bold transition-colors ${
+                            p === page
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+
+                    {/* Next */}
+                    <button
+                      disabled={page >= totalPages}
+                      onClick={() => { setPage(page + 1); window.scrollTo(0, 0); }}
+                      className="px-3 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-30 transition-colors"
+                    >
+                      {isAr ? "التالي →" : "Next →"}
+                    </button>
+
+                    {/* Oldest */}
+                    {page < totalPages && (
+                      <button
+                        onClick={() => { setPage(totalPages); window.scrollTo(0, 0); }}
+                        className="px-3 py-2 rounded-lg text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                      >
+                        {isAr ? "الأقدم" : "Oldest"}
+                      </button>
+                    )}
+                  </nav>
+                )}
+              </>
             )}
           </div>
           <div className="lg:col-span-1">
