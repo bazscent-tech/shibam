@@ -124,7 +124,7 @@ const Index = () => {
                       ) : (
                         <button
                           key={p}
-                          onClick={() => { setPage(p); window.scrollTo(0, 0); }}
+                          onClick={() => { setPage(p); }}
                           className={`w-10 h-10 rounded-lg text-sm font-bold transition-colors ${
                             p === page
                               ? "bg-primary text-primary-foreground"
