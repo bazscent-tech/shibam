@@ -109,9 +109,9 @@ const Index = () => {
                 {totalPages > 1 && (
                   <nav className="flex items-center justify-center gap-1 mt-8 flex-wrap" dir={isAr ? "rtl" : "ltr"}>
                     {/* Previous */}
-                    <button
+                     <button
                       disabled={page <= 1}
-                      onClick={() => { setPage(page - 1); window.scrollTo(0, 0); }}
+                      onClick={() => { setPage(page - 1); }}
                       className="px-3 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-30 transition-colors"
                     >
                       {isAr ? "← السابق" : "← Previous"}
