@@ -139,7 +139,7 @@ const Index = () => {
                     {/* Next */}
                     <button
                       disabled={page >= totalPages}
-                      onClick={() => { setPage(page + 1); window.scrollTo(0, 0); }}
+                      onClick={() => { setPage(page + 1); }}
                       className="px-3 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-30 transition-colors"
                     >
                       {isAr ? "التالي →" : "Next →"}
