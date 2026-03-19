@@ -62,7 +62,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
                 <Clock className="w-3 h-3" />
                 {formatTime(article.published_at, language)}
               </div>
-              <ShareButtons title={article.title} url={article.url} />
+              <ShareButtons title={article.title} articleId={article.id} />
             </div>
           </div>
         </motion.article>

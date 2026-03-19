@@ -5,9 +5,10 @@ import { DBArticle } from "@/hooks/useArticles";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ShareButtons from "@/components/ShareButtons";
-import { ArrowRight, Clock, Newspaper, Loader2 } from "lucide-react";
+import { ArrowRight, Clock, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Helmet } from "react-helmet-async";
 
 const ArticlePage = () => {
   const { id } = useParams();
@@ -54,8 +55,23 @@ const ArticlePage = () => {
     ? formatDistanceToNow(new Date(article.published_at), { addSuffix: true, locale: isAr ? ar : undefined })
     : "";
 
+  const siteUrl = `${window.location.origin}/article/${article.id}`;
+
   return (
     <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
+      <Helmet>
+        <title>{article.title} | شبام نيوز</title>
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={article.description || article.title} />
+        <meta property="og:url" content={siteUrl} />
+        <meta property="og:type" content="article" />
+        {article.image_url && <meta property="og:image" content={article.image_url} />}
+        <meta name="twitter:card" content={article.image_url ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={article.title} />
+        <meta name="twitter:description" content={article.description || article.title} />
+        {article.image_url && <meta name="twitter:image" content={article.image_url} />}
+      </Helmet>
+
       <SiteHeader />
       <div className="container mx-auto py-6 max-w-4xl">
         <Link to="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
@@ -92,19 +108,8 @@ const ArticlePage = () => {
 
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-border">
             <span className="text-sm text-muted-foreground">{isAr ? "مشاركة:" : "Share:"}</span>
-            <ShareButtons title={article.title} url={article.url} />
+            <ShareButtons title={article.title} articleId={article.id} />
           </div>
-
-          {article.url && (
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-4 text-sm text-urgent hover:underline"
-            >
-              {isAr ? "قراءة المصدر الأصلي ←" : "Read original source →"}
-            </a>
-          )}
         </article>
       </div>
       <SiteFooter />

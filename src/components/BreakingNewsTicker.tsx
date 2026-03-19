@@ -22,7 +22,7 @@ const BreakingNewsTicker = ({ language = "ar" }: Props) => {
         <div className="overflow-hidden flex-1 relative">
           <motion.div
             className="whitespace-nowrap text-sm font-medium"
-            animate={{ x: isAr ? ["100%", "-100%"] : ["-100%", "100%"] }}
+            animate={{ x: ["100%", "-100%"] }}
             transition={{ duration: articles.length * 8, repeat: Infinity, ease: "linear" }}
           >
             {text}
