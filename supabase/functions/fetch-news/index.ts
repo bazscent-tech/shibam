@@ -6,6 +6,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Auto-categorization keywords
+const arCategoryMap: Record<string, string[]> = {
+  "سياسة": ["رئيس", "وزير", "حكومة", "برلمان", "انتخابات", "دبلوماس", "سفير", "مجلس", "قرار", "سياس", "حزب", "معارض"],
+  "اقتصاد": ["اقتصاد", "بورصة", "أسهم", "نفط", "تجار", "استثمار", "بنك", "عمل", "دولار", "ريال", "مالي", "ميزاني"],
+  "تكنولوجيا": ["تكنولوجيا", "تقن", "ذكاء اصطناعي", "هاتف", "تطبيق", "إنترنت", "رقم", "برمج", "حاسوب", "آبل", "جوجل", "سامسونج"],
+  "رياضة": ["رياض", "كرة", "مباراة", "دوري", "منتخب", "لاعب", "مدرب", "بطولة", "هدف", "فوز", "تأهل", "كأس"],
+  "ثقافة": ["ثقاف", "أدب", "كتاب", "فن", "مسرح", "سينما", "فيلم", "معرض", "رواية", "شعر", "موسيق"],
+  "صحة": ["صح", "طب", "مرض", "علاج", "مستشفى", "لقاح", "وباء", "دواء", "طبيب", "جراح"],
+  "علوم": ["علم", "فضاء", "ناسا", "اكتشاف", "بحث", "دراسة", "تجربة", "مختبر", "فيزياء", "كيمياء"],
+  "منوعات": ["منوع", "غريب", "طريف", "سفر", "سياحة", "طعام", "موضة"],
+};
+
+const enCategoryMap: Record<string, string[]> = {
+  "Politics": ["president", "minister", "government", "election", "diplomat", "congress", "senate", "politic", "vote", "law"],
+  "Economy": ["economy", "stock", "market", "oil", "trade", "invest", "bank", "finance", "dollar", "gdp", "inflation"],
+  "Technology": ["tech", "ai", "artificial", "phone", "app", "software", "google", "apple", "microsoft", "cyber", "digital"],
+  "Sports": ["sport", "football", "soccer", "basketball", "match", "league", "player", "coach", "championship", "goal", "win"],
+  "Culture": ["culture", "art", "book", "film", "movie", "music", "theater", "exhibition", "literary", "festival"],
+  "Health": ["health", "medical", "disease", "treatment", "hospital", "vaccine", "pandemic", "drug", "doctor", "surgery"],
+  "Science": ["science", "space", "nasa", "discover", "research", "study", "experiment", "physics", "climate"],
+  "Entertainment": ["entertain", "celebrity", "show", "concert", "game", "funny", "travel", "food", "fashion"],
+};
+
+function autoClassify(title: string, description: string, language: string): string {
+  const text = `${title} ${description}`.toLowerCase();
+  const map = language === "ar" ? arCategoryMap : enCategoryMap;
+  let bestCat = language === "ar" ? "عام" : "General";
+  let bestScore = 0;
+
+  for (const [cat, keywords] of Object.entries(map)) {
+    let score = 0;
+    for (const kw of keywords) {
+      if (text.includes(kw.toLowerCase())) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestCat = cat;
+    }
+  }
+  return bestCat;
+}
+
 function extractArticlesFromRSS(xml: string, sourceId: string, language: string) {
   const articles: any[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -23,12 +65,12 @@ function extractArticlesFromRSS(xml: string, sourceId: string, language: string)
     const description = getTag("description").replace(/<[^>]*>/g, "").substring(0, 500);
     const pubDate = getTag("pubDate");
 
-    // Try to extract image from media:content, enclosure, or description
     let imageUrl = "";
     const mediaMatch = item.match(/url="([^"]+\.(jpg|jpeg|png|webp|gif)[^"]*)"/i);
     if (mediaMatch) imageUrl = mediaMatch[1];
 
     if (title && link) {
+      const category = autoClassify(title, description, language);
       articles.push({
         source_id: sourceId,
         title,
@@ -36,6 +78,7 @@ function extractArticlesFromRSS(xml: string, sourceId: string, language: string)
         url: link,
         image_url: imageUrl || null,
         language,
+        category,
         published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
         is_published: true,
       });
@@ -46,7 +89,6 @@ function extractArticlesFromRSS(xml: string, sourceId: string, language: string)
 
 function extractArticlesFromHTML(html: string, sourceId: string, baseUrl: string, language: string) {
   const articles: any[] = [];
-  // Simple headline extraction from common patterns
   const patterns = [
     /<h[23][^>]*>\s*<a[^>]*href="([^"]*)"[^>]*>([^<]+)<\/a>/gi,
     /<a[^>]*href="([^"]*)"[^>]*class="[^"]*title[^"]*"[^>]*>([^<]+)<\/a>/gi,
@@ -63,6 +105,7 @@ function extractArticlesFromHTML(html: string, sourceId: string, baseUrl: string
       if (url.startsWith("/")) url = new URL(url, baseUrl).href;
       if (seen.has(url)) continue;
       seen.add(url);
+      const category = autoClassify(title, "", language);
       articles.push({
         source_id: sourceId,
         title,
@@ -70,6 +113,7 @@ function extractArticlesFromHTML(html: string, sourceId: string, baseUrl: string
         url,
         image_url: null,
         language,
+        category,
         published_at: new Date().toISOString(),
         is_published: true,
       });
@@ -95,7 +139,6 @@ serve(async (req) => {
       // Empty body from cron - fetch all active sources
     }
 
-    // Get source(s) to fetch
     let query = supabase.from("news_sources").select("*").eq("is_active", true);
     if (sourceId) {
       query = supabase.from("news_sources").select("*").eq("id", sourceId);
@@ -125,7 +168,6 @@ serve(async (req) => {
         }
 
         if (articles.length > 0) {
-          // Upsert to avoid duplicates (url is unique)
           const { data: inserted, error: insErr } = await supabase
             .from("articles")
             .upsert(articles, { onConflict: "url", ignoreDuplicates: true })
@@ -134,7 +176,6 @@ serve(async (req) => {
           const count = inserted?.length || 0;
           totalFetched += count;
 
-          // Update source stats
           await supabase
             .from("news_sources")
             .update({
