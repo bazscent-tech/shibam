@@ -148,7 +148,7 @@ const Index = () => {
                     {/* Oldest */}
                     {page < totalPages && (
                       <button
-                        onClick={() => { setPage(totalPages); window.scrollTo(0, 0); }}
+                        onClick={() => { setPage(totalPages); }}
                         className="px-3 py-2 rounded-lg text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                       >
                         {isAr ? "الأقدم" : "Oldest"}
