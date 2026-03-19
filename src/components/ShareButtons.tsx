@@ -1,9 +1,10 @@
-import { Link2, Send, Facebook } from "lucide-react";
+import { Link2, Send, Facebook, MessageCircle } from "lucide-react";
 import { useState } from "react";
 
 interface ShareButtonsProps {
   title: string;
   url?: string;
+  articleId?: string;
 }
 
 const XIcon = () => (
@@ -12,11 +13,15 @@ const XIcon = () => (
   </svg>
 );
 
-const ShareButtons = ({ title, url }: ShareButtonsProps) => {
+const ShareButtons = ({ title, url, articleId }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
-  const shareUrl = url || window.location.href;
+
+  // Always use site URL, never original source
+  const siteBase = window.location.origin;
+  const shareUrl = articleId ? `${siteBase}/article/${articleId}` : (url?.startsWith("manual-") || url?.startsWith("http") ? `${siteBase}${window.location.pathname}` : `${siteBase}/article/${articleId || ""}`);
+  const shareText = `${title}\n\n#شبام_نيوز`;
   const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedTitle = encodeURIComponent(title);
+  const encodedText = encodeURIComponent(shareText);
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -34,7 +39,16 @@ const ShareButtons = ({ title, url }: ShareButtonsProps) => {
         <Link2 className="w-3.5 h-3.5" />
       </button>
       <a
-        href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`}
+        href={`https://wa.me/?text=${encodedText}%0A${encodedUrl}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+        title="WhatsApp"
+      >
+        <MessageCircle className="w-3.5 h-3.5" />
+      </a>
+      <a
+        href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}
         target="_blank"
         rel="noopener noreferrer"
         className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
@@ -52,7 +66,7 @@ const ShareButtons = ({ title, url }: ShareButtonsProps) => {
         <Facebook className="w-3.5 h-3.5" />
       </a>
       <a
-        href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
+        href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
         target="_blank"
         rel="noopener noreferrer"
         className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
