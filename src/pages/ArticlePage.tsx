@@ -11,23 +11,32 @@ import { ar } from "date-fns/locale";
 import { Helmet } from "react-helmet-async";
 
 const ArticlePage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const [article, setArticle] = useState<DBArticle | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
-      if (!id) return;
-      const { data } = await supabase
+    const fetchArticle = async () => {
+      if (!slug) return;
+      // Try slug first, fallback to id for old links
+      let { data } = await supabase
         .from("articles")
         .select("*")
-        .eq("id", id)
+        .eq("slug", slug)
         .single();
+      if (!data) {
+        const res = await supabase
+          .from("articles")
+          .select("*")
+          .eq("id", slug)
+          .single();
+        data = res.data;
+      }
       setArticle(data as DBArticle | null);
       setLoading(false);
     };
-    fetch();
-  }, [id]);
+    fetchArticle();
+  }, [slug]);
 
   if (loading) {
     return (
@@ -55,7 +64,8 @@ const ArticlePage = () => {
     ? formatDistanceToNow(new Date(article.published_at), { addSuffix: true, locale: isAr ? ar : undefined })
     : "";
 
-  const siteUrl = `${window.location.origin}/article/${article.id}`;
+  const articleSlug = article.slug || article.id;
+  const siteUrl = `${window.location.origin}/article/${articleSlug}`;
 
   return (
     <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
@@ -113,7 +123,7 @@ const ArticlePage = () => {
 
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-border">
             <span className="text-sm text-muted-foreground">{isAr ? "مشاركة:" : "Share:"}</span>
-            <ShareButtons title={article.title} articleId={article.id} author={article.author} description={article.description} />
+            <ShareButtons title={article.title} articleId={article.id} slug={articleSlug} author={article.author} description={article.description} />
           </div>
         </article>
       </div>

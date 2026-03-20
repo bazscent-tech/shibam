@@ -37,7 +37,7 @@ const App = () => (
         <AdminQuickAccess />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/article/:id" element={<ArticlePage />} />
+          <Route path="/article/:slug" element={<ArticlePage />} />
           <Route path="/archive" element={<NewsArchive />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route

@@ -28,6 +28,7 @@ export type Database = {
           is_published: boolean
           language: string
           published_at: string | null
+          slug: string | null
           source_id: string | null
           title: string
           updated_at: string
@@ -46,6 +47,7 @@ export type Database = {
           is_published?: boolean
           language?: string
           published_at?: string | null
+          slug?: string | null
           source_id?: string | null
           title: string
           updated_at?: string
@@ -64,6 +66,7 @@ export type Database = {
           is_published?: boolean
           language?: string
           published_at?: string | null
+          slug?: string | null
           source_id?: string | null
           title?: string
           updated_at?: string

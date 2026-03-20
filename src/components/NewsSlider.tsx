@@ -48,7 +48,7 @@ const NewsSlider = ({ articles }: Props) => {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <div className="absolute bottom-0 right-0 left-0 p-5 md:p-8">
-          <Link to={`/article/${article.id}`}>
+          <Link to={`/article/${article.slug || article.id}`}>
             <h3 className="text-lg md:text-2xl font-bold text-white leading-tight line-clamp-2 hover:underline">
               {article.title}
             </h3>

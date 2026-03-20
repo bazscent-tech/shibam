@@ -5,6 +5,7 @@ interface ShareButtonsProps {
   title: string;
   url?: string;
   articleId?: string;
+  slug?: string;
   author?: string | null;
   description?: string | null;
 }
@@ -15,11 +16,12 @@ const XIcon = () => (
   </svg>
 );
 
-const ShareButtons = ({ title, url, articleId, author, description }: ShareButtonsProps) => {
+const ShareButtons = ({ title, slug, articleId, author, description }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
 
   const siteBase = window.location.origin;
-  const shareUrl = articleId ? `${siteBase}/article/${articleId}` : (url?.startsWith("manual-") || url?.startsWith("http") ? `${siteBase}${window.location.pathname}` : `${siteBase}/article/${articleId || ""}`);
+  const articlePath = slug || articleId || "";
+  const shareUrl = `${siteBase}/article/${articlePath}`;
   const authorLine = author ? `\n✍️ ${author}` : "";
   const descLine = description ? `\n${description.slice(0, 100)}` : "";
   const shareText = `${title}${authorLine}${descLine}\n\n#شبام_نيوز`;
@@ -34,47 +36,19 @@ const ShareButtons = ({ title, url, articleId, author, description }: ShareButto
 
   return (
     <div className="flex items-center gap-1.5">
-      <button
-        onClick={copyLink}
-        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title={copied ? "تم النسخ!" : "نسخ الرابط"}
-      >
+      <button onClick={copyLink} className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title={copied ? "تم النسخ!" : "نسخ الرابط"}>
         <Link2 className="w-3.5 h-3.5" />
       </button>
-      <a
-        href={`https://wa.me/?text=${encodedText}%0A${encodedUrl}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title="WhatsApp"
-      >
+      <a href={`https://wa.me/?text=${encodedText}%0A${encodedUrl}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="WhatsApp">
         <MessageCircle className="w-3.5 h-3.5" />
       </a>
-      <a
-        href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title="Telegram"
-      >
+      <a href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="Telegram">
         <Send className="w-3.5 h-3.5" />
       </a>
-      <a
-        href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title="Facebook"
-      >
+      <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="Facebook">
         <Facebook className="w-3.5 h-3.5" />
       </a>
-      <a
-        href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title="X (Twitter)"
-      >
+      <a href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="X (Twitter)">
         <XIcon />
       </a>
     </div>

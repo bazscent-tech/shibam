@@ -35,7 +35,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
           className="news-card overflow-hidden"
         >
           {article.image_url && (
-            <Link to={`/article/${article.id}`}>
+            <Link to={`/article/${article.slug || article.id}`}>
               <img
                 src={article.image_url}
                 alt={article.title}
@@ -49,7 +49,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-urgent">{article.category || (language === "ar" ? "عام" : "General")}</span>
             </div>
-            <Link to={`/article/${article.id}`}>
+            <Link to={`/article/${article.slug || article.id}`}>
               <h3 className="text-base font-bold text-foreground leading-snug mb-2 line-clamp-2 hover:text-urgent transition-colors">
                 {article.title}
               </h3>
@@ -62,7 +62,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
                 <Clock className="w-3 h-3" />
                 {formatTime(article.published_at, language)}
               </div>
-              <ShareButtons title={article.title} articleId={article.id} />
+              <ShareButtons title={article.title} articleId={article.id} slug={article.slug || article.id} />
             </div>
           </div>
         </motion.article>
