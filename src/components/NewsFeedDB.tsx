@@ -35,7 +35,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
           className="news-card overflow-hidden"
         >
           {article.image_url && (
-            <Link to={`/article/${article.id}`}>
+            <Link to={`/article/${article.slug || article.id}`}>
               <img
                 src={article.image_url}
                 alt={article.title}
