@@ -86,7 +86,7 @@ const SiteFooter = () => {
           </div>
 
           <div className="text-center text-xs text-primary-foreground/40 pt-2">
-            © 2026 شبام نيوز. جميع الحقوق محفوظة. مدعوم بالذكاء الاصطناعي.
+            © جميع الحقوق محفوظه لدى <span className="text-urgent">شبام نيوز</span> 2023
           </div>
         </div>
       </div>
