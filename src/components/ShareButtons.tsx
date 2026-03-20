@@ -5,6 +5,8 @@ interface ShareButtonsProps {
   title: string;
   url?: string;
   articleId?: string;
+  author?: string | null;
+  description?: string | null;
 }
 
 const XIcon = () => (
