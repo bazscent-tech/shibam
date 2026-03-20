@@ -16,6 +16,7 @@ export interface DBArticle {
   is_published: boolean;
   is_ai_generated: boolean;
   created_at: string;
+  slug: string | null;
 }
 
 const PAGE_SIZE = 15;
