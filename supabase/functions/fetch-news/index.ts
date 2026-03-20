@@ -12,10 +12,15 @@ const arCategoryMap: Record<string, string[]> = {
   "اقتصاد": ["اقتصاد", "بورصة", "أسهم", "نفط", "تجار", "استثمار", "بنك", "عمل", "دولار", "ريال", "مالي", "ميزاني"],
   "تكنولوجيا": ["تكنولوجيا", "تقن", "ذكاء اصطناعي", "هاتف", "تطبيق", "إنترنت", "رقم", "برمج", "حاسوب", "آبل", "جوجل", "سامسونج"],
   "رياضة": ["رياض", "كرة", "مباراة", "دوري", "منتخب", "لاعب", "مدرب", "بطولة", "هدف", "فوز", "تأهل", "كأس"],
-  "ثقافة": ["ثقاف", "أدب", "كتاب", "فن", "مسرح", "سينما", "فيلم", "معرض", "رواية", "شعر", "موسيق"],
+  "ثقافة": ["ثقاف", "أدب", "كتاب", "معرض", "رواية", "شعر", "موسيق"],
   "صحة": ["صح", "طب", "مرض", "علاج", "مستشفى", "لقاح", "وباء", "دواء", "طبيب", "جراح"],
   "علوم": ["علم", "فضاء", "ناسا", "اكتشاف", "بحث", "دراسة", "تجربة", "مختبر", "فيزياء", "كيمياء"],
   "منوعات": ["منوع", "غريب", "طريف", "سفر", "سياحة", "طعام", "موضة"],
+  "المقالات": ["مقال", "رأي", "تحليل", "عمود", "كاتب", "افتتاحية"],
+  "فنون": ["فن", "مسرح", "سينما", "فيلم", "رسم", "تشكيل", "فنان", "معرض فني"],
+  "لقاءات": ["لقاء", "حوار", "مقابلة", "تصريح خاص", "حصري"],
+  "تصريحات": ["تصريح", "صرح", "أعلن", "أكد", "نفى", "بيان", "مؤتمر صحفي"],
+  "تمون": ["تموين", "غذاء", "أسعار", "سلع", "محروقات", "وقود", "قمح", "سكر"],
 };
 
 const enCategoryMap: Record<string, string[]> = {
@@ -23,10 +28,15 @@ const enCategoryMap: Record<string, string[]> = {
   "Economy": ["economy", "stock", "market", "oil", "trade", "invest", "bank", "finance", "dollar", "gdp", "inflation"],
   "Technology": ["tech", "ai", "artificial", "phone", "app", "software", "google", "apple", "microsoft", "cyber", "digital"],
   "Sports": ["sport", "football", "soccer", "basketball", "match", "league", "player", "coach", "championship", "goal", "win"],
-  "Culture": ["culture", "art", "book", "film", "movie", "music", "theater", "exhibition", "literary", "festival"],
+  "Culture": ["culture", "book", "literary", "festival", "heritage"],
   "Health": ["health", "medical", "disease", "treatment", "hospital", "vaccine", "pandemic", "drug", "doctor", "surgery"],
   "Science": ["science", "space", "nasa", "discover", "research", "study", "experiment", "physics", "climate"],
   "Entertainment": ["entertain", "celebrity", "show", "concert", "game", "funny", "travel", "food", "fashion"],
+  "Articles": ["opinion", "column", "editorial", "analysis", "commentary", "essay"],
+  "Arts": ["art", "film", "movie", "music", "theater", "exhibition", "painting", "artist", "cinema"],
+  "Interviews": ["interview", "exclusive", "dialogue", "conversation", "q&a"],
+  "Statements": ["statement", "declared", "announced", "confirmed", "denied", "press conference", "briefing"],
+  "Supplies": ["supply", "food prices", "commodity", "fuel", "wheat", "grain", "sugar", "shortage"],
 };
 
 function autoClassify(title: string, description: string, language: string): string {

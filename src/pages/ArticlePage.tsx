@@ -61,11 +61,16 @@ const ArticlePage = () => {
     <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
       <Helmet>
         <title>{article.title} | شبام نيوز</title>
+        <meta name="description" content={article.description || article.title} />
         <meta property="og:title" content={article.title} />
         <meta property="og:description" content={article.description || article.title} />
         <meta property="og:url" content={siteUrl} />
         <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="شبام نيوز" />
         {article.image_url && <meta property="og:image" content={article.image_url} />}
+        {article.image_url && <meta property="og:image:width" content="1200" />}
+        {article.image_url && <meta property="og:image:height" content="630" />}
+        {article.author && <meta property="article:author" content={article.author} />}
         <meta name="twitter:card" content={article.image_url ? "summary_large_image" : "summary"} />
         <meta name="twitter:title" content={article.title} />
         <meta name="twitter:description" content={article.description || article.title} />
@@ -108,7 +113,7 @@ const ArticlePage = () => {
 
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-border">
             <span className="text-sm text-muted-foreground">{isAr ? "مشاركة:" : "Share:"}</span>
-            <ShareButtons title={article.title} articleId={article.id} />
+            <ShareButtons title={article.title} articleId={article.id} author={article.author} description={article.description} />
           </div>
         </article>
       </div>

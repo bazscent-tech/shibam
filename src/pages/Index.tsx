@@ -12,8 +12,8 @@ import SiteFooter from "@/components/SiteFooter";
 import { useArticles } from "@/hooks/useArticles";
 import { Loader2 } from "lucide-react";
 
-const arCategories = ["الرئيسية", "سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "صحة", "علوم", "منوعات"];
-const enCategories = ["All", "Politics", "Economy", "Technology", "Sports", "Culture", "Health", "Science", "Entertainment"];
+const arCategories = ["الرئيسية", "سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "صحة", "علوم", "منوعات", "المقالات", "فنون", "لقاءات", "تصريحات", "تمون"];
+const enCategories = ["All", "Politics", "Economy", "Technology", "Sports", "Culture", "Health", "Science", "Entertainment", "Articles", "Arts", "Interviews", "Statements", "Supplies"];
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<"ar" | "en">("ar");

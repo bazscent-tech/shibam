@@ -5,6 +5,8 @@ interface ShareButtonsProps {
   title: string;
   url?: string;
   articleId?: string;
+  author?: string | null;
+  description?: string | null;
 }
 
 const XIcon = () => (
@@ -13,13 +15,14 @@ const XIcon = () => (
   </svg>
 );
 
-const ShareButtons = ({ title, url, articleId }: ShareButtonsProps) => {
+const ShareButtons = ({ title, url, articleId, author, description }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
 
-  // Always use site URL, never original source
   const siteBase = window.location.origin;
   const shareUrl = articleId ? `${siteBase}/article/${articleId}` : (url?.startsWith("manual-") || url?.startsWith("http") ? `${siteBase}${window.location.pathname}` : `${siteBase}/article/${articleId || ""}`);
-  const shareText = `${title}\n\n#شبام_نيوز`;
+  const authorLine = author ? `\n✍️ ${author}` : "";
+  const descLine = description ? `\n${description.slice(0, 100)}` : "";
+  const shareText = `${title}${authorLine}${descLine}\n\n#شبام_نيوز`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(shareText);
 

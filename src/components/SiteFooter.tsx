@@ -35,10 +35,10 @@ const SiteFooter = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <h2 className="text-2xl font-bold mb-3">
-              شبام <span className="text-urgent">نيوز</span>
+              <span className="text-urgent">شبام نيوز</span>
             </h2>
             <p className="text-sm text-primary-foreground/70 max-w-md leading-relaxed">
-              منصة إخبارية ذكية تعتمد على الذكاء الاصطناعي لتقديم أخبار دقيقة وتحليلات معمّقة من مصادر موثوقة حول العالم.
+              شبام نيوز، الوجه الإعلامي الجديد والموثوق لكل ما يهمك نغطي الأخبار السياسية، الاقتصادية، الصحية، والرياضية بتقارير حصرية، تحقيقات عميقة، وتحليلات خبيرة مباشرة من صناع الأحداث.
             </p>
           </div>
           <div>
@@ -66,7 +66,7 @@ const SiteFooter = () => {
         <div className="border-t border-primary-foreground/10 mt-8 pt-6 space-y-4">
           <div className="text-center">
             <h3 className="text-xl font-bold">
-              شبام <span className="text-urgent">نيوز</span>
+              <span className="text-urgent">شبام نيوز</span>
             </h3>
             <p className="text-sm text-primary-foreground/60 mt-1">
               رئيس التحرير / عبدالملك حامد الكوكباني
@@ -86,7 +86,7 @@ const SiteFooter = () => {
           </div>
 
           <div className="text-center text-xs text-primary-foreground/40 pt-2">
-            © 2026 شبام نيوز. جميع الحقوق محفوظة. مدعوم بالذكاء الاصطناعي.
+            © جميع الحقوق محفوظه لدى <span className="text-urgent">شبام نيوز</span> 2023
           </div>
         </div>
       </div>
