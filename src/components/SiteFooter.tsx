@@ -66,7 +66,7 @@ const SiteFooter = () => {
         <div className="border-t border-primary-foreground/10 mt-8 pt-6 space-y-4">
           <div className="text-center">
             <h3 className="text-xl font-bold">
-              شبام <span className="text-urgent">نيوز</span>
+              <span className="text-urgent">شبام نيوز</span>
             </h3>
             <p className="text-sm text-primary-foreground/60 mt-1">
               رئيس التحرير / عبدالملك حامد الكوكباني
