@@ -113,7 +113,7 @@ const ArticlePage = () => {
 
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-border">
             <span className="text-sm text-muted-foreground">{isAr ? "مشاركة:" : "Share:"}</span>
-            <ShareButtons title={article.title} articleId={article.id} />
+            <ShareButtons title={article.title} articleId={article.id} author={article.author} description={article.description} />
           </div>
         </article>
       </div>
