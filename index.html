@@ -1,30 +1,37 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <!-- Base URL لتصحيح جميع المسارات -->
+    <base href="/shibam/">
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="شبام نيوز" />
-    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json" />
+
     <title>شبام نيوز | تغطية شاملة لأهم الأحداث العربية</title>
     <meta name="description" content="شبام نيوز | متابعة دقيقة لأبرز الأخبار والتطورات في العالم العربي |  تقارير | تحليلات | وأحدث المستجدات أولًا بأول">
     <meta name="author" content="Shibam News" />
-    
-    
+
+    <!-- OG & Twitter -->
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/4p9e4L4x1OZXGGggh6SBArEgizo1/social-images/social-1773874359208-1epG91pC93Izh55a.webp">
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="https://shibamnews.com" />
     <meta property="og:title" content="شبام نيوز | تغطية شاملة لأهم الأحداث العربية">
-  <meta name="twitter:title" content="شبام نيوز | تغطية شاملة لأهم الأحداث العربية">
-  <meta property="og:description" content="شبام نيوز | متابعة دقيقة لأبرز الأخبار والتطورات في العالم العربي |  تقارير | تحليلات | وأحدث المستجدات أولًا بأول">
-  <meta name="twitter:description" content="شبام نيوز | متابعة دقيقة لأبرز الأخبار والتطورات في العالم العربي |  تقارير | تحليلات | وأحدث المستجدات أولًا بأول">
-  <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/4p9e4L4x1OZXGGggh6SBArEgizo1/social-images/social-1773874359208-1epG91pC93Izh55a.webp">
-</head>
+    <meta name="twitter:title" content="شبام نيوز | تغطية شاملة لأهم الأحداث العربية">
+    <meta property="og:description" content="شبام نيوز | متابعة دقيقة لأبرز الأخبار والتطورات في العالم العربي |  تقارير | تحليلات | وأحدث المستجدات أولًا بأول">
+    <meta name="twitter:description" content="شبام نيوز | متابعة دقيقة لأبرز الأخبار والتطورات في العالم العربي |  تقارير | تحليلات | وأحدث المستجدات أولًا بأول">
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/4p9e4L4x1OZXGGggh6SBArEgizo1/social-images/social-1773874359208-1epG91pC93Izh55a.webp">
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- اجعل المسار نسبي بالنسبة للـ base -->
+    <script type="module" src="src/main.tsx"></script>
   </body>
 </html>
