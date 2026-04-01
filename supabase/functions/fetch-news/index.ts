@@ -58,6 +58,20 @@ function autoClassify(title: string, description: string, language: string): str
   return bestCat;
 }
 
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&hellip;/g, '…').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
+    .replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/&nbsp;/g, ' ')
+    .replace(/&#\d+;/g, (m) => String.fromCharCode(parseInt(m.slice(2, -1))))
+    .replace(/&#x[0-9a-fA-F]+;/g, (m) => String.fromCharCode(parseInt(m.slice(3, -1), 16)));
+}
+
+function cleanText(html: string): string {
+  return decodeEntities(html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
+}
+
 function extractArticlesFromRSS(xml: string, sourceId: string, language: string) {
   const articles: any[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -70,9 +84,9 @@ function extractArticlesFromRSS(xml: string, sourceId: string, language: string)
       return m ? (m[1] || m[2] || "").trim() : "";
     };
 
-    const title = getTag("title");
-    const link = getTag("link");
-    const description = getTag("description").replace(/<[^>]*>/g, "").substring(0, 500);
+    const title = cleanText(getTag("title"));
+    const link = getTag("link").trim();
+    const description = cleanText(getTag("description")).substring(0, 500);
     const pubDate = getTag("pubDate");
 
     let imageUrl = "";

@@ -3,13 +3,17 @@ import { Search, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { decodeHtmlEntities } from "@/lib/htmlUtils";
 import ThemeToggle from "./ThemeToggle";
+import RadioPlayer from "./RadioPlayer";
 
 interface SearchResult {
   id: string;
   title: string;
   category: string | null;
   image_url: string | null;
+  slug: string | null;
+  description: string | null;
 }
 
 const SiteHeader = () => {
@@ -19,9 +23,33 @@ const SiteHeader = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const navLinks = ["الرئيسية", "سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "منوعات", "المقالات", "فنون", "لقاءات"];
+  const navLinks = [
+    { label: "الرئيسية", href: "/" },
+    { label: "سياسة", href: "/?cat=سياسة" },
+    { label: "اقتصاد", href: "/?cat=اقتصاد" },
+    { label: "تكنولوجيا", href: "/?cat=تكنولوجيا" },
+    { label: "رياضة", href: "/?cat=رياضة" },
+    { label: "ثقافة", href: "/?cat=ثقافة" },
+    { label: "منوعات", href: "/?cat=منوعات" },
+    { label: "المقالات", href: "/?cat=المقالات" },
+    { label: "فنون", href: "/?cat=فنون" },
+    { label: "لقاءات", href: "/?cat=لقاءات" },
+  ];
 
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Real-time search with debounce - searches title AND content
   useEffect(() => {
     if (!query.trim()) { setResults([]); return; }
     clearTimeout(debounceRef.current);
@@ -29,19 +57,19 @@ const SiteHeader = () => {
       setSearching(true);
       const { data } = await supabase
         .from("articles")
-        .select("id, title, category, image_url")
+        .select("id, title, category, image_url, slug, description")
         .eq("is_published", true)
-        .ilike("title", `%${query}%`)
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%,content.ilike.%${query}%`)
         .order("published_at", { ascending: false })
-        .limit(8);
+        .limit(10);
       setResults((data as SearchResult[]) || []);
       setSearching(false);
-    }, 300);
+    }, 250);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
   return (
-    <header className="sticky-header border-b border-border">
+    <header className="sticky-header border-b border-border" ref={menuRef}>
       <div className="container mx-auto">
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center gap-3">
@@ -58,17 +86,18 @@ const SiteHeader = () => {
 
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
-              <a
-                key={link}
-                href="#"
+              <Link
+                key={link.label}
+                to={link.href}
                 className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded"
               >
-                {link}
-              </a>
+                {link.label}
+              </Link>
             ))}
           </nav>
 
           <div className="flex items-center gap-2">
+            <RadioPlayer />
             <ThemeToggle />
             <button
               onClick={() => { setSearchOpen(!searchOpen); setQuery(""); setResults([]); }}
@@ -110,15 +139,15 @@ const SiteHeader = () => {
                     {results.map((r) => (
                       <Link
                         key={r.id}
-                        to={`/article/${r.id}`}
+                        to={`/article/${r.slug || r.id}`}
                         onClick={() => { setSearchOpen(false); setQuery(""); }}
                         className="flex items-center gap-3 p-3 hover:bg-secondary transition-colors border-b border-border last:border-b-0"
                       >
                         {r.image_url && (
-                          <img src={r.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" />
+                          <img src={r.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground line-clamp-2">{r.title}</p>
+                          <p className="text-sm font-medium text-foreground line-clamp-2">{decodeHtmlEntities(r.title)}</p>
                           {r.category && <span className="text-xs text-muted-foreground">{r.category}</span>}
                         </div>
                       </Link>
@@ -128,6 +157,11 @@ const SiteHeader = () => {
                 {searching && query && (
                   <div className="absolute top-full left-0 right-0 bg-background border border-border rounded-lg shadow-lg z-50 p-4 text-center text-sm text-muted-foreground">
                     جاري البحث...
+                  </div>
+                )}
+                {!searching && query && results.length === 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-background border border-border rounded-lg shadow-lg z-50 p-4 text-center text-sm text-muted-foreground">
+                    لا توجد نتائج
                   </div>
                 )}
               </div>
@@ -146,13 +180,14 @@ const SiteHeader = () => {
             >
               <div className="py-3 flex flex-col gap-1">
                 {navLinks.map((link) => (
-                  <a
-                    key={link}
-                    href="#"
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded transition-colors"
                   >
-                    {link}
-                  </a>
+                    {link.label}
+                  </Link>
                 ))}
               </div>
             </motion.nav>

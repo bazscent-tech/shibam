@@ -19,7 +19,7 @@ export interface DBArticle {
   slug: string | null;
 }
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 30;
 
 export function useArticles(language: string = "ar", page: number = 1) {
   const [articles, setArticles] = useState<DBArticle[]>([]);
@@ -32,16 +32,30 @@ export function useArticles(language: string = "ar", page: number = 1) {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
+      // Only show articles from last 48 hours
+      const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
       const { data, error, count } = await supabase
         .from("articles")
         .select("*", { count: "exact" })
         .eq("language", language)
         .eq("is_published", true)
+        .gte("published_at", cutoff)
         .order("published_at", { ascending: false })
         .range(from, to);
 
       if (error) throw error;
-      setArticles(data || []);
+      
+      // Deduplicate by title
+      const seen = new Set<string>();
+      const unique = (data || []).filter((a) => {
+        const key = a.title.trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      
+      setArticles(unique);
       setTotalCount(count || 0);
     } catch (e) {
       console.error("Error fetching articles:", e);
@@ -75,7 +89,7 @@ export function useBreakingNews(language: string = "ar") {
     const fetch = async () => {
       const { data } = await supabase
         .from("articles")
-        .select("id, title, published_at, language, url, image_url")
+        .select("id, title, published_at, language, url, image_url, slug")
         .eq("language", language)
         .eq("is_published", true)
         .order("published_at", { ascending: false })

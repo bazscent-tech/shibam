@@ -15,6 +15,7 @@ import AdminSources from "./pages/AdminSources";
 import AdminAiTools from "./pages/AdminAiTools";
 import AdminTrending from "./pages/AdminTrending";
 import AdminSettings from "./pages/AdminSettings";
+import AdminRadio from "./pages/AdminRadio";
 import AdminQuickAccess from "./components/AdminQuickAccess";
 import ArticlePage from "./pages/ArticlePage";
 import NewsArchive from "./pages/NewsArchive";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="ai-tools" element={<AdminAiTools />} />
             <Route path="trending" element={<AdminTrending />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="radio" element={<AdminRadio />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
