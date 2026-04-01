@@ -130,6 +130,57 @@ export type Database = {
         }
         Relationships: []
       }
+      radio_stations: {
+        Row: {
+          country: string | null
+          created_at: string
+          frequency: string | null
+          id: string
+          is_active: boolean
+          is_working: boolean
+          last_checked: string | null
+          logo_url: string | null
+          name: string
+          play_count: number
+          quality_score: number
+          sort_order: number | null
+          stream_urls: Json
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          is_working?: boolean
+          last_checked?: string | null
+          logo_url?: string | null
+          name: string
+          play_count?: number
+          quality_score?: number
+          sort_order?: number | null
+          stream_urls?: Json
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          is_working?: boolean
+          last_checked?: string | null
+          logo_url?: string | null
+          name?: string
+          play_count?: number
+          quality_score?: number
+          sort_order?: number | null
+          stream_urls?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
