@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, topic, articleType, content } = await req.json();
+    const { action, topic, articleType, content, title } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -32,14 +32,39 @@ serve(async (req) => {
         userPrompt = `حسّن هذا العنوان: "${content}"\n\nأعطني 3 خيارات محسنة.`;
         break;
 
+      case "rewrite_content":
+        systemPrompt = "أنت كاتب صحفي محترف. أعد صياغة المحتوى بأسلوب صحفي مهني مع الحفاظ على المعلومات.";
+        userPrompt = `أعد صياغة هذا المحتوى بأسلوب صحفي مهني:\n\n${content}`;
+        break;
+
+      case "enhance_style":
+        systemPrompt = "أنت محرر أدبي محترف. حسّن أسلوب الكتابة مع الحفاظ على المعنى.";
+        userPrompt = `حسّن أسلوب هذا النص:\n\n${content}`;
+        break;
+
+      case "professional_rewrite":
+        systemPrompt = "أنت رئيس تحرير صحفي محترف. أعد كتابة المقال بالكامل بأسلوب صحفي احترافي عالي الجودة.";
+        userPrompt = `أعد كتابة هذا المقال بالكامل بأسلوب صحفي احترافي:\n\nالعنوان: ${title || ""}\n\n${content}`;
+        break;
+
+      case "generate_seo":
+        systemPrompt = "أنت خبير SEO محترف. أنشئ بيانات SEO للمقال التالي.";
+        userPrompt = `أنشئ بيانات SEO لهذا المقال:\n\nالعنوان: ${title || ""}\nالمحتوى: ${(content || "").substring(0, 500)}\n\nأعطني:\n1. عنوان SEO (60 حرف كحد أقصى)\n2. وصف meta (160 حرف)\n3. كلمات مفتاحية (5-8 كلمات)\n4. هاشتاقات (5 هاشتاقات)\n5. اسم الموقع: شبام نيوز / Shibam News`;
+        break;
+
       case "summarize":
         systemPrompt = "أنت خبير في تلخيص الأخبار. لخّص المحتوى بشكل دقيق ومختصر.";
-        userPrompt = `لخّص هذا المحتوى في 2-3 جمل:\n\n${content}`;
+        userPrompt = `لخّص هذا المحتوى في نقاط:\n\n${content}`;
+        break;
+
+      case "fetch_full_content":
+        systemPrompt = "أنت مساعد في استخراج محتوى المقالات. استخرج المحتوى الكامل والنظيف.";
+        userPrompt = `بناءً على هذا العنوان والوصف، اكتب مقالاً كاملاً ومفصلاً:\n\nالعنوان: ${title || ""}\nالوصف: ${content || ""}\n\nاكتب مقالاً كاملاً من 300-500 كلمة.`;
         break;
 
       case "classify":
-        systemPrompt = "أنت خبير في تصنيف الأخبار. صنّف المقال إلى أحد الأقسام التالية: سياسة، اقتصاد، تكنولوجيا، رياضة، ثقافة، صحة، علوم، منوعات، عالمي.";
-        userPrompt = `صنّف هذا المقال:\n\nالعنوان: ${topic}\nالمحتوى: ${content}\n\nأجب بكلمة واحدة فقط (اسم القسم).`;
+        systemPrompt = "أنت خبير في تصنيف الأخبار. صنّف المقال إلى أحد الأقسام التالية: سياسة، اقتصاد، تكنولوجيا، رياضة، ثقافة، صحة، علوم، منوعات، المقالات، فنون، لقاءات، تصريحات، تمون.";
+        userPrompt = `صنّف هذا المقال:\n\nالعنوان: ${topic || title}\nالمحتوى: ${content}\n\nأجب بكلمة واحدة فقط (اسم القسم).`;
         break;
 
       default:

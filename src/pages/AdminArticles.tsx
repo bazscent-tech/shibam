@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { Pencil, Trash2, Loader2, X, ImagePlus, Upload, Save, Wand2 } from "lucide-react";
+import { Pencil, Trash2, Loader2, X, ImagePlus, Save, Wand2, FileText, Tags, RotateCcw, Sparkles, Search as SearchIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { decodeHtmlEntities } from "@/lib/htmlUtils";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const arCategories = ["سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "صحة", "علوم", "منوعات"];
-const enCategories = ["Politics", "Economy", "Technology", "Sports", "Culture", "Health", "Science", "Entertainment"];
+const allCategories = ["سياسة", "اقتصاد", "تكنولوجيا", "رياضة", "ثقافة", "صحة", "علوم", "منوعات", "المقالات", "فنون", "لقاءات", "تصريحات", "تمون"];
+const enCategories = ["Politics", "Economy", "Technology", "Sports", "Culture", "Health", "Science", "Entertainment", "Articles", "Arts", "Interviews", "Statements", "Supplies"];
 
 interface Article {
   id: string;
@@ -24,6 +24,40 @@ interface Article {
   author: string | null;
 }
 
+const streamAI = async (body: any, onDelta: (text: string) => void) => {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-tools`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || "خطأ في الاتصال");
+  }
+  const reader = resp.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buffer.indexOf("\n")) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (!line.startsWith("data: ")) continue;
+      const json = line.slice(6).trim();
+      if (json === "[DONE]") return;
+      try {
+        const parsed = JSON.parse(json);
+        const c = parsed.choices?.[0]?.delta?.content;
+        if (c) onDelta(c);
+      } catch {}
+    }
+  }
+};
+
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +66,8 @@ const AdminArticles = () => {
   const [newImages, setNewImages] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -48,8 +84,7 @@ const AdminArticles = () => {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("articles").delete().eq("id", id);
-    if (error) { toast({ title: "خطأ", variant: "destructive" }); return; }
+    await supabase.from("articles").delete().eq("id", id);
     setArticles((prev) => prev.filter((a) => a.id !== id));
     toast({ title: "تم الحذف ✓" });
   };
@@ -57,9 +92,9 @@ const AdminArticles = () => {
   const startEditing = (article: Article) => {
     setEditingId(article.id);
     setEditData({
-      title: article.title,
-      description: article.description,
-      content: article.content,
+      title: decodeHtmlEntities(article.title),
+      description: decodeHtmlEntities(article.description),
+      content: decodeHtmlEntities(article.content),
       category: article.category,
       language: article.language,
       author: article.author,
@@ -96,47 +131,124 @@ const AdminArticles = () => {
         const url = await uploadImage(newImages[0]);
         if (url) updates.image_url = url;
       }
-      const { error } = await supabase.from("articles").update(updates).eq("id", id);
-      if (error) throw error;
+      await supabase.from("articles").update(updates).eq("id", id);
       toast({ title: "تم التحديث ✓" });
       setEditingId(null);
       load();
     } catch (e: any) {
       toast({ title: "خطأ", description: e.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  const categories = editData.language === "en" ? enCategories : arCategories;
+  // AI tool helper
+  const runAI = async (action: string, field: "title" | "content" | "description", extraBody: any = {}) => {
+    setAiLoading(action);
+    try {
+      let text = "";
+      await streamAI(
+        { action, ...extraBody },
+        (delta) => { text += delta; setEditData((d) => ({ ...d, [field]: text })); }
+      );
+    } catch (e: any) {
+      toast({ title: "خطأ AI", description: e.message, variant: "destructive" });
+    } finally { setAiLoading(null); }
+  };
+
+  const categories = editData.language === "en" ? enCategories : allCategories;
+
+  const filtered = articles.filter((a) =>
+    !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6" dir="rtl">
-      <h1 className="text-xl font-bold" style={{ color: "hsl(var(--admin-text))" }}>إدارة المقالات</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold" style={{ color: "hsl(var(--admin-text))" }}>إدارة المقالات</h1>
+        <div className="relative w-64">
+          <SearchIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "hsl(var(--admin-text-muted))" }} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="بحث في المقالات..."
+            className="admin-input text-sm pr-9 py-2"
+          />
+        </div>
+      </div>
 
       {/* Full Edit Panel */}
       {editingId && (
         <div className="admin-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold" style={{ color: "hsl(var(--admin-text))" }}>تحرير المقال</h2>
-            <button onClick={() => setEditingId(null)} className="p-1.5 rounded hover:bg-[hsl(var(--admin-surface-hover))]" style={{ color: "hsl(var(--admin-text-muted))" }}><X className="w-5 h-5" /></button>
+            <button onClick={() => setEditingId(null)} className="p-1.5 rounded hover:bg-[hsl(var(--admin-surface-hover))]"><X className="w-5 h-5" style={{ color: "hsl(var(--admin-text-muted))" }} /></button>
           </div>
 
+          {/* Title with AI */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>العنوان *</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm" style={{ color: "hsl(var(--admin-text-muted))" }}>العنوان *</label>
+              <button
+                onClick={() => runAI("improve_headline", "title", { content: editData.title })}
+                disabled={!!aiLoading}
+                className="text-xs px-2 py-1 rounded flex items-center gap-1 hover:bg-[hsl(var(--admin-surface-hover))]"
+                style={{ color: "hsl(var(--sidebar-ring))" }}
+                title="تحسين العنوان بالذكاء الاصطناعي"
+              >
+                {aiLoading === "improve_headline" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                تحسين العنوان
+              </button>
+            </div>
             <input type="text" value={editData.title ?? ""} onChange={(e) => setEditData((d) => ({ ...d, title: e.target.value }))} className="admin-input" />
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>وصف مختصر</label>
             <textarea value={editData.description ?? ""} onChange={(e) => setEditData((d) => ({ ...d, description: e.target.value }))} className="admin-input min-h-[80px] resize-y" />
           </div>
 
+          {/* Content with AI tools */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>المحتوى</label>
-            <textarea value={editData.content ?? ""} onChange={(e) => setEditData((d) => ({ ...d, content: e.target.value }))} className="admin-input min-h-[150px] resize-y" />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm" style={{ color: "hsl(var(--admin-text-muted))" }}>المحتوى</label>
+              <div className="flex items-center gap-1 flex-wrap">
+                {[
+                  { action: "rewrite_content", label: "إعادة صياغة", icon: RotateCcw },
+                  { action: "enhance_style", label: "تحسين الأسلوب", icon: Sparkles },
+                  { action: "professional_rewrite", label: "كتابة احترافية", icon: FileText },
+                  { action: "summarize", label: "تلخيص", icon: Tags },
+                  { action: "fetch_full_content", label: "جلب المحتوى", icon: SearchIcon },
+                ].map(({ action, label, icon: Icon }) => (
+                  <button
+                    key={action}
+                    onClick={() => runAI(action, "content", { content: editData.content, title: editData.title })}
+                    disabled={!!aiLoading}
+                    className="text-xs px-2 py-1 rounded flex items-center gap-1 hover:bg-[hsl(var(--admin-surface-hover))]"
+                    style={{ color: "hsl(var(--sidebar-ring))" }}
+                    title={label}
+                  >
+                    {aiLoading === action ? <Loader2 className="w-3 h-3 animate-spin" /> : <Icon className="w-3 h-3" />}
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea value={editData.content ?? ""} onChange={(e) => setEditData((d) => ({ ...d, content: e.target.value }))} className="admin-input min-h-[200px] resize-y" />
           </div>
 
+          {/* SEO Generator */}
+          <button
+            onClick={() => runAI("generate_seo", "description", { content: editData.content, title: editData.title })}
+            disabled={!!aiLoading}
+            className="text-xs px-3 py-2 rounded flex items-center gap-1.5 w-fit"
+            style={{ background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--sidebar-ring))" }}
+          >
+            {aiLoading === "generate_seo" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            توليد SEO
+          </button>
+
+          {/* Author */}
           <div>
             <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>اسم الكاتب</label>
             <input type="text" value={editData.author ?? ""} onChange={(e) => setEditData((d) => ({ ...d, author: e.target.value }))} className="admin-input" />
@@ -163,7 +275,7 @@ const AdminArticles = () => {
                 <span className="text-[10px]">إضافة صورة</span>
               </button>
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpg,image/jpeg,image/png,image/webp,image/gif" onChange={handleImageSelect} className="hidden" />
           </div>
 
           {/* Category */}
@@ -199,7 +311,7 @@ const AdminArticles = () => {
       <div className="admin-surface overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" style={{ color: "hsl(var(--admin-text-muted))" }} /></div>
-        ) : articles.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <p className="text-sm text-center py-8" style={{ color: "hsl(var(--admin-text-muted))" }}>لا توجد مقالات</p>
         ) : (
           <div className="overflow-x-auto">
@@ -212,10 +324,10 @@ const AdminArticles = () => {
                 </tr>
               </thead>
               <tbody>
-                {articles.map((article) => (
+                {filtered.map((article) => (
                   <tr key={article.id} style={{ borderBottom: "1px solid hsl(var(--admin-border))" }} className={`hover:bg-[hsl(var(--admin-surface-hover))] ${editingId === article.id ? "bg-[hsl(var(--admin-surface-hover))]" : ""}`}>
                     <td className="px-4 py-3 max-w-xs">
-                      <p className="truncate font-medium" style={{ color: "hsl(var(--admin-text))" }}>{article.title}</p>
+                      <p className="truncate font-medium" style={{ color: "hsl(var(--admin-text))" }}>{decodeHtmlEntities(article.title)}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs px-2 py-1 rounded bg-urgent/10 text-urgent">{article.category || "عام"}</span>
