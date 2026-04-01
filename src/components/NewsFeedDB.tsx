@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { DBArticle } from "@/hooks/useArticles";
-import { Clock } from "lucide-react";
+import { Clock, User } from "lucide-react";
 import ShareButtons from "./ShareButtons";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { decodeHtmlEntities } from "@/lib/htmlUtils";
 
 interface Props {
   articles: DBArticle[];
@@ -38,7 +39,7 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
             <Link to={`/article/${article.slug || article.id}`}>
               <img
                 src={article.image_url}
-                alt={article.title}
+                alt={decodeHtmlEntities(article.title)}
                 className="w-full h-48 object-cover"
                 loading="lazy"
                 onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
@@ -51,16 +52,24 @@ const NewsFeedDB = ({ articles, language = "ar" }: Props) => {
             </div>
             <Link to={`/article/${article.slug || article.id}`}>
               <h3 className="text-base font-bold text-foreground leading-snug mb-2 line-clamp-2 hover:text-urgent transition-colors">
-                {article.title}
+                {decodeHtmlEntities(article.title)}
               </h3>
             </Link>
             {article.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{article.description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{decodeHtmlEntities(article.description)}</p>
             )}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                {formatTime(article.published_at, language)}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                {article.author && (
+                  <span className="flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {article.author}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatTime(article.published_at, language)}
+                </span>
               </div>
               <ShareButtons title={article.title} articleId={article.id} slug={article.slug || article.id} />
             </div>
