@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  Radio,
 } from "lucide-react";
 
 const adminNav = [
@@ -20,6 +21,7 @@ const adminNav = [
   { label: "المصادر", path: "/admin/sources", icon: Link2 },
   { label: "أدوات الذكاء", path: "/admin/ai-tools", icon: Sparkles },
   { label: "الأبحاث والترندات", path: "/admin/trending", icon: TrendingUp },
+  { label: "الراديو", path: "/admin/radio", icon: Radio },
   { label: "الإعدادات", path: "/admin/settings", icon: Settings },
 ];
 
