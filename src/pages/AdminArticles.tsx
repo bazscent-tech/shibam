@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Pencil, Trash2, Loader2, X, ImagePlus, Save, Wand2, FileText, Tags, RotateCcw, Sparkles, Search as SearchIcon } from "lucide-react";
+import {
+  Pencil, Trash2, Loader2, X, ImagePlus, Save, Wand2, FileText, Tags,
+  RotateCcw, Sparkles, Search as SearchIcon, ListOrdered, Globe, Image as ImageIcon,
+  ExternalLink, Info
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { decodeHtmlEntities } from "@/lib/htmlUtils";
@@ -58,6 +62,19 @@ const streamAI = async (body: any, onDelta: (text: string) => void) => {
   }
 };
 
+const fetchJSON = async (body: any) => {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-tools`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || "خطأ في الاتصال");
+  }
+  return resp.json();
+};
+
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +85,11 @@ const AdminArticles = () => {
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [seoResult, setSeoResult] = useState("");
+  const [fetchedImages, setFetchedImages] = useState<string[]>([]);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [detailsResult, setDetailsResult] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -99,9 +121,15 @@ const AdminArticles = () => {
       language: article.language,
       author: article.author,
       image_url: article.image_url,
+      url: article.url,
     });
     setNewImages([]);
     setNewImagePreviews([]);
+    setSeoResult("");
+    setFetchedImages([]);
+    setShowImagePicker(false);
+    setDetailsResult("");
+    setShowDetails(false);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +155,7 @@ const AdminArticles = () => {
     setSaving(true);
     try {
       const updates = { ...editData };
+      delete (updates as any).url;
       if (newImages.length > 0) {
         const url = await uploadImage(newImages[0]);
         if (url) updates.image_url = url;
@@ -140,7 +169,7 @@ const AdminArticles = () => {
     } finally { setSaving(false); }
   };
 
-  // AI tool helper
+  // AI streaming helper
   const runAI = async (action: string, field: "title" | "content" | "description", extraBody: any = {}) => {
     setAiLoading(action);
     try {
@@ -154,10 +183,101 @@ const AdminArticles = () => {
     } finally { setAiLoading(null); }
   };
 
+  // SEO generator - shows in separate box
+  const runSEO = async () => {
+    setAiLoading("generate_seo");
+    setSeoResult("");
+    try {
+      let text = "";
+      await streamAI(
+        { action: "generate_seo", content: editData.content, title: editData.title },
+        (delta) => { text += delta; setSeoResult(text); }
+      );
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    } finally { setAiLoading(null); }
+  };
+
+  // Fetch original content from URL
+  const fetchOriginalContent = async () => {
+    if (!editData.url) {
+      toast({ title: "لا يوجد رابط مصدر", variant: "destructive" });
+      return;
+    }
+    setAiLoading("fetch_original_content");
+    try {
+      let text = "";
+      await streamAI(
+        { action: "fetch_original_content", url: editData.url },
+        (delta) => { text += delta; setEditData((d) => ({ ...d, content: text })); }
+      );
+    } catch (e: any) {
+      toast({ title: "خطأ في جلب المحتوى", description: e.message, variant: "destructive" });
+    } finally { setAiLoading(null); }
+  };
+
+  // Fetch original image from source
+  const fetchOriginalImage = async () => {
+    if (!editData.url) {
+      toast({ title: "لا يوجد رابط مصدر", variant: "destructive" });
+      return;
+    }
+    setAiLoading("fetch_original_image");
+    setShowImagePicker(false);
+    try {
+      const data = await fetchJSON({ action: "fetch_original_image", url: editData.url });
+      if (data.images?.length > 0) {
+        setFetchedImages(data.images);
+        setShowImagePicker(true);
+      } else {
+        toast({ title: "لم يتم العثور على صور" });
+      }
+    } catch (e: any) {
+      toast({ title: "خطأ في جلب الصور", description: e.message, variant: "destructive" });
+    } finally { setAiLoading(null); }
+  };
+
+  // Fetch related details
+  const fetchDetails = async () => {
+    setAiLoading("fetch_details");
+    setDetailsResult("");
+    setShowDetails(true);
+    try {
+      let text = "";
+      await streamAI(
+        { action: "fetch_details", title: editData.title, content: editData.content },
+        (delta) => { text += delta; setDetailsResult(text); }
+      );
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    } finally { setAiLoading(null); }
+  };
+
+  // Open Google Images search
+  const searchImages = () => {
+    const query = encodeURIComponent(editData.title || "news");
+    window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
+  };
+
   const categories = editData.language === "en" ? enCategories : allCategories;
 
   const filtered = articles.filter((a) =>
     !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const AiBtn = ({ action, label, icon: Icon, onClick, loading: isLoading }: {
+    action: string; label: string; icon: any; onClick: () => void; loading?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={!!aiLoading}
+      className="text-xs px-2.5 py-1.5 rounded-md flex items-center gap-1.5 transition-all hover:bg-[hsl(var(--admin-surface-hover))] border border-transparent hover:border-[hsl(var(--admin-border))]"
+      style={{ color: "hsl(var(--sidebar-ring))" }}
+      title={label}
+    >
+      {(isLoading ?? aiLoading === action) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 
   return (
@@ -178,85 +298,126 @@ const AdminArticles = () => {
 
       {/* Full Edit Panel */}
       {editingId && (
-        <div className="admin-surface p-5 space-y-4">
+        <div className="admin-surface p-5 space-y-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold" style={{ color: "hsl(var(--admin-text))" }}>تحرير المقال</h2>
             <button onClick={() => setEditingId(null)} className="p-1.5 rounded hover:bg-[hsl(var(--admin-surface-hover))]"><X className="w-5 h-5" style={{ color: "hsl(var(--admin-text-muted))" }} /></button>
           </div>
 
-          {/* Title with AI */}
+          {/* Title + AI */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm" style={{ color: "hsl(var(--admin-text-muted))" }}>العنوان *</label>
-              <button
-                onClick={() => runAI("improve_headline", "title", { content: editData.title })}
-                disabled={!!aiLoading}
-                className="text-xs px-2 py-1 rounded flex items-center gap-1 hover:bg-[hsl(var(--admin-surface-hover))]"
-                style={{ color: "hsl(var(--sidebar-ring))" }}
-                title="تحسين العنوان بالذكاء الاصطناعي"
-              >
-                {aiLoading === "improve_headline" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                تحسين العنوان
-              </button>
+              <label className="text-sm font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>العنوان *</label>
+              <AiBtn action="improve_headline" label="تحسين العنوان" icon={Wand2}
+                onClick={() => runAI("improve_headline", "title", { content: editData.title })} />
             </div>
             <input type="text" value={editData.title ?? ""} onChange={(e) => setEditData((d) => ({ ...d, title: e.target.value }))} className="admin-input" />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>وصف مختصر</label>
+            <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>وصف مختصر</label>
             <textarea value={editData.description ?? ""} onChange={(e) => setEditData((d) => ({ ...d, description: e.target.value }))} className="admin-input min-h-[80px] resize-y" />
           </div>
 
-          {/* Content with AI tools */}
+          {/* Content + AI toolbar */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm" style={{ color: "hsl(var(--admin-text-muted))" }}>المحتوى</label>
-              <div className="flex items-center gap-1 flex-wrap">
-                {[
-                  { action: "rewrite_content", label: "إعادة صياغة", icon: RotateCcw },
-                  { action: "enhance_style", label: "تحسين الأسلوب", icon: Sparkles },
-                  { action: "professional_rewrite", label: "كتابة احترافية", icon: FileText },
-                  { action: "summarize", label: "تلخيص", icon: Tags },
-                  { action: "fetch_full_content", label: "جلب المحتوى", icon: SearchIcon },
-                ].map(({ action, label, icon: Icon }) => (
-                  <button
-                    key={action}
-                    onClick={() => runAI(action, "content", { content: editData.content, title: editData.title })}
-                    disabled={!!aiLoading}
-                    className="text-xs px-2 py-1 rounded flex items-center gap-1 hover:bg-[hsl(var(--admin-surface-hover))]"
-                    style={{ color: "hsl(var(--sidebar-ring))" }}
-                    title={label}
-                  >
-                    {aiLoading === action ? <Loader2 className="w-3 h-3 animate-spin" /> : <Icon className="w-3 h-3" />}
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <label className="text-sm font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>المحتوى</label>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap mb-2 p-2 rounded-lg" style={{ background: "hsl(var(--admin-surface-hover))" }}>
+              <AiBtn action="rewrite_content" label="إعادة صياغة" icon={RotateCcw}
+                onClick={() => runAI("rewrite_content", "content", { content: editData.content, title: editData.title })} />
+              <AiBtn action="enhance_style" label="تحسين المحتوى" icon={Sparkles}
+                onClick={() => runAI("enhance_style", "content", { content: editData.content, title: editData.title })} />
+              <AiBtn action="professional_rewrite" label="كتابة احترافية" icon={FileText}
+                onClick={() => runAI("professional_rewrite", "content", { content: editData.content, title: editData.title })} />
+              <AiBtn action="summarize" label="تلخيص" icon={Tags}
+                onClick={() => runAI("summarize", "content", { content: editData.content })} />
+              <AiBtn action="summarize_bullets" label="تلخيص نقاط" icon={ListOrdered}
+                onClick={() => runAI("summarize_bullets", "content", { content: editData.content })} />
             </div>
             <textarea value={editData.content ?? ""} onChange={(e) => setEditData((d) => ({ ...d, content: e.target.value }))} className="admin-input min-h-[200px] resize-y" />
           </div>
 
-          {/* SEO Generator */}
-          <button
-            onClick={() => runAI("generate_seo", "description", { content: editData.content, title: editData.title })}
-            disabled={!!aiLoading}
-            className="text-xs px-3 py-2 rounded flex items-center gap-1.5 w-fit"
-            style={{ background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--sidebar-ring))" }}
-          >
-            {aiLoading === "generate_seo" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            توليد SEO
-          </button>
+          {/* Source URL (read-only display) */}
+          {editData.url && !editData.url.startsWith("manual-") && (
+            <div>
+              <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>رابط المصدر</label>
+              <div className="flex items-center gap-2">
+                <input type="text" value={editData.url} readOnly className="admin-input flex-1 text-xs opacity-70" />
+                <a href={editData.url} target="_blank" rel="noopener" className="p-2 rounded hover:bg-[hsl(var(--admin-surface-hover))]">
+                  <ExternalLink className="w-4 h-4" style={{ color: "hsl(var(--admin-text-muted))" }} />
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Advanced AI Tools */}
+          <div className="p-3 rounded-lg space-y-3" style={{ background: "hsl(var(--admin-bg))", border: "1px solid hsl(var(--admin-border))" }}>
+            <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "hsl(var(--admin-text))" }}>
+              <Sparkles className="w-4 h-4 text-urgent" /> أدوات متقدمة
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <AiBtn action="generate_seo" label="استخراج SEO" icon={Tags} onClick={runSEO} />
+              <AiBtn action="fetch_original_content" label="جلب الخبر الأصلي" icon={Globe} onClick={fetchOriginalContent} />
+              <AiBtn action="fetch_original_image" label="جلب الصورة الأصلية" icon={ImageIcon} onClick={fetchOriginalImage} />
+              <AiBtn action="search_images" label="بحث عن صورة" icon={SearchIcon} onClick={searchImages} />
+              <AiBtn action="fetch_details" label="جلب تفاصيل" icon={Info} onClick={fetchDetails} />
+            </div>
+          </div>
+
+          {/* SEO Results Box */}
+          {seoResult && (
+            <div className="p-4 rounded-lg whitespace-pre-wrap text-sm leading-relaxed" style={{ background: "hsl(var(--admin-bg))", border: "1px solid hsl(var(--admin-border))", color: "hsl(var(--admin-text))" }}>
+              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: "hsl(var(--sidebar-ring))" }}>
+                <Tags className="w-4 h-4" /> نتائج SEO
+              </h4>
+              {seoResult}
+            </div>
+          )}
+
+          {/* Fetched Images Picker */}
+          {showImagePicker && fetchedImages.length > 0 && (
+            <div className="p-4 rounded-lg" style={{ background: "hsl(var(--admin-bg))", border: "1px solid hsl(var(--admin-border))" }}>
+              <h4 className="text-sm font-semibold mb-3" style={{ color: "hsl(var(--admin-text))" }}>
+                <ImageIcon className="w-4 h-4 inline ml-1" /> اختر صورة من المصدر
+              </h4>
+              <div className="flex flex-wrap gap-3">
+                {fetchedImages.map((img, i) => (
+                  <button key={i} onClick={() => { setEditData((d) => ({ ...d, image_url: img })); setShowImagePicker(false); toast({ title: "تم اختيار الصورة ✓" }); }}
+                    className="relative w-28 h-20 rounded-lg overflow-hidden border-2 transition-all hover:border-urgent"
+                    style={{ borderColor: editData.image_url === img ? "hsl(var(--urgent-red))" : "hsl(var(--admin-border))" }}>
+                    <img src={img} alt="" className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fetched Details Box */}
+          {showDetails && detailsResult && (
+            <div className="p-4 rounded-lg whitespace-pre-wrap text-sm leading-relaxed" style={{ background: "hsl(var(--admin-bg))", border: "1px solid hsl(var(--admin-border))", color: "hsl(var(--admin-text))" }}>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: "hsl(var(--sidebar-ring))" }}>
+                  <Info className="w-4 h-4" /> تفاصيل إضافية
+                </h4>
+                <button onClick={() => setShowDetails(false)} className="p-1 rounded hover:bg-[hsl(var(--admin-surface-hover))]"><X className="w-4 h-4" style={{ color: "hsl(var(--admin-text-muted))" }} /></button>
+              </div>
+              {detailsResult}
+            </div>
+          )}
 
           {/* Author */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>اسم الكاتب</label>
+            <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>اسم الكاتب</label>
             <input type="text" value={editData.author ?? ""} onChange={(e) => setEditData((d) => ({ ...d, author: e.target.value }))} className="admin-input" />
           </div>
 
           {/* Image */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>صورة المقال</label>
+            <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>صورة المقال</label>
             <div className="flex flex-wrap gap-3 items-start">
               {editData.image_url && newImages.length === 0 && (
                 <div className="relative w-32 h-24 rounded-lg overflow-hidden border border-border">
@@ -280,7 +441,7 @@ const AdminArticles = () => {
 
           {/* Category */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>التصنيف</label>
+            <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>التصنيف</label>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <button key={cat} onClick={() => setEditData((d) => ({ ...d, category: cat }))} className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${editData.category === cat ? "text-white" : ""}`} style={editData.category === cat ? { background: "hsl(var(--urgent-red))" } : { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" }}>
@@ -292,7 +453,7 @@ const AdminArticles = () => {
 
           {/* Language */}
           <div>
-            <label className="block text-sm mb-1.5" style={{ color: "hsl(var(--admin-text-muted))" }}>القسم</label>
+            <label className="block text-sm mb-1.5 font-medium" style={{ color: "hsl(var(--admin-text-muted))" }}>القسم</label>
             <div className="flex gap-2">
               <button onClick={() => setEditData((d) => ({ ...d, language: "ar" }))} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${editData.language === "ar" ? "btn-admin-primary" : ""}`} style={editData.language !== "ar" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>عربي</button>
               <button onClick={() => setEditData((d) => ({ ...d, language: "en" }))} className={`px-4 py-2 rounded text-sm font-medium transition-colors ${editData.language === "en" ? "btn-admin-primary" : ""}`} style={editData.language !== "en" ? { background: "hsl(var(--admin-surface-hover))", color: "hsl(var(--admin-text-muted))" } : undefined}>English</button>
