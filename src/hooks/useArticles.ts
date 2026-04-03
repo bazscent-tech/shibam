@@ -70,14 +70,15 @@ export function useArticles(language: string = "ar", page: number = 1) {
 
   // Subscribe to realtime changes
   useEffect(() => {
+    const channelName = `articles-realtime-${language}-${page}`;
     const channel = supabase
-      .channel("articles-realtime")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "articles" }, () => {
         fetchArticles();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchArticles]);
+  }, [fetchArticles, language, page]);
 
   return { articles, totalCount, loading, totalPages: Math.ceil(totalCount / PAGE_SIZE), refetch: fetchArticles };
 }
